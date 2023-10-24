@@ -10,18 +10,18 @@
 				<key>DNSProtocol</key>
 				<string>HTTPS</string>
 				<key>ServerURL</key>
-				<string>https://apple.dns.nextdns.io/8352dc</string>
+				<string>https://apple.dns.nextdns.io/a57e88</string>
 			</dict>
 			<key>PayloadDisplayName</key>
 			<string>Chặn Thu Hồi Ko Chặn ADS </string>
 			<key>PayloadIdentifier</key>
-			<string>io.nextdns.8352dc.profile.dnsSettings.managed</string>
+			<string>io.nextdns.a57e88.profile.dnsSettings.managed</string>
 			<key>PayloadOrganization</key>
 			<string>Anhdong</string>
 			<key>PayloadType</key>
 			<string>com.apple.dnsSettings.managed</string>
 			<key>PayloadUUID</key>
-			<string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.8352dc</string>
+			<string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.a57e88</string>
 			<key>PayloadVersion</key>
 			<integer>1</integer>
 		</dict>
