@@ -15,7 +15,7 @@ secure_dns:
 proxies:
 - vmess:
     name: Anh Đông-Bảo Mật
-    server: 123.18.240.138
+    server: 113.181.64.0
     port: 443
     user_id: db8b7e02-f3ca-4f58-961a-3c6824ff70c5
     security: ''
@@ -29,7 +29,7 @@ proxies:
         skip_tls_verify: true
 - vmess:
     name: Anh Đông
-    server: 123.18.240.138
+    server: 113.181.64.0
     port: 80
     user_id: 16e2b940-c700-4fbb-8139-5b94eafa5d66
     security: ''
