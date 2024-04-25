@@ -25,7 +25,7 @@ proxies:
     transport:
       wss:
         path: /
-        sni: cloudctrl.gcloudsdk.com
+        sni: m.tiktok.com
         skip_tls_verify: true
 - vmess:
     name: Anh Đông
@@ -40,7 +40,7 @@ proxies:
       ws:
         path: /
         headers:
-          Host: cloudctrl.gcloudsdk.com
+          Host: m.tiktok.com
 policy_groups:
 - select:
     name: Proxy
