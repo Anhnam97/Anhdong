@@ -1,0 +1,188 @@
+allow_external_connections: true
+hide_vpn_icon: false
+include_all_networks: true
+include_apns: true
+include_cellular_services: true
+dns_servers:
+- https://doh.pub/dns-query
+hosts:
+  '*.qq.com*': 119.28.28.28
+  '*.icloud.com*': 119.29.29.29
+  '*.aliyun.com*': 223.5.5.5
+  '*.alipay.com*': 223.5.5.5
+  '*.alicdn.com*': 223.5.5.5
+  '*youtube.com*': 8.8.8.8
+  '*.jd.com*': 119.28.28.28
+  '*x.com': 8.8.8.8
+  '*.126.net*': 119.29.29.29
+  '*.127.net*': 119.29.29.29
+  '*.tencent.com*': 119.29.29.29
+  '*twitter*': 8.8.8.8
+  '*youtube*': 8.8.8.8
+  '*facebook*': 8.8.8.8
+  '*google.com*': 8.8.8.8
+  hdslb.com*: 119.29.29.29
+  '*telegram*': 8.8.8.8
+  '*.netease.com*': 119.29.29.29
+  '*.126.com*': 119.29.29.29
+  '*m.tiktok.com*': 8.8.8.8
+  '*.xiaomi.com*': 119.29.29.29
+  '*googlevideo*': 8.8.8.8
+  '*.mi.com*': 119.29.29.29
+  '*.163.com*': 119.29.29.29
+  '*tiktokv.com*': 8.8.8.8
+  '*.bilibili.com*': 119.29.29.29
+  '*.taobao.com*': 223.5.5.5
+  '*.icloud.com.cn*': 119.29.29.29
+  '*.weixin.com*': 119.29.29.29
+  '*.tmall.com*': 223.5.5.5
+  '*googlevideo.com*': 8.8.8.8
+secure_dns:
+  servers:
+  - https://8.8.8.8
+  ecs: true
+  public_ip_lookup_url: https://ifconfig.me/ip
+  exclude:
+  - localhost
+  - '*.apple.com'
+  - '*.mzstatic.com'
+proxies:
+- vmess:
+    name: Anh Đông-Bảo Mật
+    server: 123.18.240.138
+    port: 443
+    user_id: db8b7e02-f3ca-4f58-961a-3c6824ff70c5
+    security: ''
+    legacy: false
+    tfo: false
+    udp_relay: true
+    transport:
+      wss:
+        path: /
+        sni: cloudctrl.gcloudsdk.com
+        skip_tls_verify: true
+- vmess:
+    name: Anh Đông
+    server: 123.18.240.138
+    port: 80
+    user_id: 16e2b940-c700-4fbb-8139-5b94eafa5d66
+    security: ''
+    legacy: false
+    tfo: false
+    udp_relay: true
+    transport:
+      ws:
+        path: /
+        headers:
+          Host: cloudctrl.gcloudsdk.com
+policy_groups:
+- select:
+    name: Proxy
+    policies:
+    - Anh Đông-Bảo Mật
+    - Anh Đông
+    hidden: false
+- select:
+    name: ADS
+    policies:
+    - REJECT
+rules:
+- rule_set:
+    match: https://github.com/Centralmatrix3/Matrix-io/raw/master/Egern/Ruleset/AdBlock.yaml
+    policy: ADS
+- rule_set:
+    match: https://github.com/lonely0811/olsd/raw/main/Egern/Rule/Gambling.yaml
+    policy: ADS
+- rule_set:
+    match: https://github.com/lonely0811/olsd/raw/main/Egern/Rule/ADenegr.yaml
+    policy: ADS
+- domain_suffix:
+    match: appldnld.apple.com
+    policy: REJECT
+- domain_suffix:
+    match: comm-main.ess.apple.com
+    policy: REJECT
+- domain_suffix:
+    match: comm-cohort.ess.apple.com
+    policy: REJECT
+- domain_suffix:
+    match: axm-app.apple.com
+    policy: REJECT
+- domain_suffix:
+    match: ocsp2.g.aaplimg.com
+    policy: REJECT
+- domain_suffix:
+    match: ocsp2-lb.apple.com.akadns.net
+    policy: REJECT
+- domain_suffix:
+    match: ocsp-us-lb.apple.com.akadns.net
+    policy: REJECT
+- domain_suffix:
+    match: ocsp-a.g.aaplimg.com
+    policy: REJECT
+- domain_suffix:
+    match: ocsp-lb.apple.com.akadns.net
+    policy: REJECT
+- domain_suffix:
+    match: mesu.apple.com
+    policy: REJECT
+- domain_suffix:
+    match: gdmf.apple.com
+    policy: REJECT
+- domain_keyword:
+    match: ocsp.apple.com
+    policy: REJECT
+- domain_suffix:
+    match: ocsp2.apple.com
+    policy: REJECT
+- ip_cidr:
+    match: 192.168.0.0/16
+    policy: DIRECT
+- ip_cidr:
+    match: 10.0.0.0/8
+    policy: DIRECT
+- ip_cidr:
+    match: 127.0.0.0/8
+    policy: DIRECT
+- ip_cidr:
+    match: 172.16.0.0/12
+    policy: DIRECT
+- ip_cidr:
+    match: 192.128.0.0/16
+    policy: DIRECT
+- ip_cidr:
+    match: 224.0.0.0/24
+    policy: DIRECT
+- default:
+    policy: Proxy
+url_rewrites:
+- match: ^https:\/\/[\w-]+\.googlevideo\.com\/initplayback\?.+&oad
+  location: reject-200
+  status_code: 302
+scriptings:
+- http_response:
+    name: TRUECALL
+    match: ^https://premium-(.+)\.truecaller\.com/v\d/(subscriptions|products\/apple)?
+    script_url: https://raw.githubusercontent.com/lonely0811/olsd/main/truecall.js
+    body_required: true
+- http_response:
+    name: YOUTUBERP
+    match: ^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting)\?
+    script_url: https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/dist/youtube.response.beta.js
+    body_required: true
+    binary_body: true
+- http_request:
+    name: YOUTUBERQ
+    match: ^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|reel\/reel_watch_sequence)\?
+    script_url: https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/dist/youtube.request.beta.js
+    body_required: true
+    binary_body: true
+mitm:
+  enabled: true
+  ca_p12: egern.p12
+  ca_passphrase: egern
+  hostnames:
+  - premium*.truecaller.com
+  - rr*.googlevideo.com
+  - youtubei.googleapis.com
+  - '*.googlevideo.com'
