@@ -1,1 +1,2 @@
 trojan://004e5d69-5adc-4106-a8d0-ae37b2eee0d2@27.71.238.86:443?allowInsecure=1&peer=dl.kgvn.garenanow.com#%F0%9F%94%B0%20ID:%2017885
+trojan://004e5d69-5adc-4106-a8d0-ae37b2eee0d2@27.71.238.86:443?allowInsecure=1&peer=dl.kgvn.garenanow.com#%5B1%5D%E2%80%BA%20%F0%9F%87%BB%F0%9F%87%B3%F0%9F%8E%AE%F0%9F%94%B0GM%201
