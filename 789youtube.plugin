@@ -2,7 +2,7 @@
 #!desc = REMOVE ADS
 #!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png
 [URL Rewrite]
-^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad reject-200
+^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad reject-dict
 [Script]
 http-response ^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting)\? requires-body=1,binary-body-mode=1,script-path= https://github.com/Anhnam97/Anhdong/raw/Anhnam97-b%E1%BA%A3n-v%C3%A1-1/youtube.response.beta.js
 http-request ^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|reel\/reel_watch_sequence)\? requires-body=1,binary-body-mode=1,script-path= https://github.com/Anhnam97/Anhdong/raw/Anhnam97-b%E1%BA%A3n-v%C3%A1-1/youtube.request.beta.js
