@@ -3,7 +3,7 @@
 # Cài đặt & nâng cấp
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/Thaomtam/3X-UI/main/install.sh)
+bash <(curl -Ls https://github.com/Anhnam97/Anhdong/raw/main/3X-UI/install.sh)
 ```
 
 # SSL
