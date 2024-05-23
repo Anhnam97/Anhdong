@@ -14,7 +14,7 @@ DOMAIN, testflight.apple.com, PROXY
 http-request ^https?:\/\/testflight\.apple\.com\/v3\/accounts\/.*\/apps$ script-path = https://raw.githubusercontent.com/manhnh97/TF_Trap/master/Loon/TF_keys.js, tag = auto_join_TF
 http-request ^https://testflight.apple.com/join/(.*) script-path = https://raw.githubusercontent.com/manhnh97/TF_Trap/master/Loon/TF_keys.js, tag = auto_join_TF
 
-cron "*/2 * * * * *" script-path = https://raw.githubusercontent.com/DecoAri/JavaScript/main/Surge/Auto_join_TF.js, tag = auto_join_TF, timeout = 180
+cron "*/2 * * * * *" script-path = https://github.com/githubdulong/Script/blob/master/Auto_join_TF.js, tag = auto_join_TF, timeout = 180
 
 [Mitm]
 hostname = testflight.apple.com
