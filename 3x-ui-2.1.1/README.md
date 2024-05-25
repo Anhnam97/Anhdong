@@ -1,6 +1,6 @@
 # 3X-UI
 
-**An Advanced Web Panel • Built on Xray Core**
+**Bảng điều khiển web nâng cao • Được xây dựng trên Xray Core BẢN CỐ ĐỊNH 2.1.1**
 
 [![](https://img.shields.io/github/v/release/mhsanaei/3x-ui.svg)](https://github.com/MHSanaei/3x-ui/releases)
 [![](https://img.shields.io/github/actions/workflow/status/mhsanaei/3x-ui/release.yml.svg)](#)
@@ -8,36 +8,34 @@
 [![Downloads](https://img.shields.io/github/downloads/mhsanaei/3x-ui/total.svg)](#)
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
-> **Disclaimer:** This project is only for personal learning and communication, please do not use it for illegal purposes, please do not use it in a production environment
+> **Disclaimer:** Dự án này chỉ dành cho mục đích học tập và giao tiếp cá nhân, vui lòng không sử dụng nó cho mục đích bất hợp pháp, vui lòng không sử dụng nó trong môi trường sản xuất
 
 **If this project is helpful to you, you may wish to give it a**:star2:
 
 <a href="#">
   <img width="125" alt="image" src="https://github.com/MHSanaei/3x-ui/assets/115543613/7aa895dd-048a-42e7-989b-afd41a74e2e1.jpg"></a>
 
-- USDT (TRC20): `TXncxkvhkDWGts487Pjqq1qT9JmwRUz8CC`
-
-## Install & Upgrade
+## Cài đặt & nâng cấp
 
 ```
 bash <(curl -Ls https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.1/install.sh)
 ```
 
-## Install Custom Version
+## Cài đặt phiên bản tùy chỉnh
 
-To install your desired version, add the version to the end of the installation command. e.g., ver `v2.1.1`:
+Để cài đặt phiên bản bạn muốn, hãy thêm phiên bản đó vào cuối lệnh cài đặt. ví dụ: phiên bản v2.1.1
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh) v2.1.1
+bash <(curl -Ls https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.1/install.sh) v2.1.1
 ```
-## Manual Install & Upgrade
+## Cài đặt và nâng cấp thủ công
 
 <details>
   <summary>Click for manual install details</summary>
 
-#### Usage
+#### Cách sử dụng
 
-1. To download the latest version of the compressed package directly to your server, run the following command:
+1. Để tải trực tiếp phiên bản mới nhất của gói nén xuống máy chủ của bạn, hãy chạy lệnh sau:
 
 ```sh
 ARCH=$(uname -m)
@@ -45,7 +43,7 @@ ARCH=$(uname -m)
 wget https://github.com/MHSanaei/3x-ui/releases/latest/download/x-ui-linux-${XUI_ARCH}.tar.gz
 ```
 
-2. Once the compressed package is downloaded, execute the following commands to install or upgrade x-ui:
+2. Sau khi tải xuống gói nén, hãy thực hiện các lệnh sau để cài đặt hoặc nâng cấp x-ui:
 
 ```sh
 ARCH=$(uname -m)
@@ -64,33 +62,34 @@ systemctl restart x-ui
 
 </details>
 
-## Install with Docker
+## Cài đặt với Docker
+
 
 <details>
   <summary>Click for Docker details</summary>
 
-#### Usage
+#### Cách sử dụng
 
-1. Install Docker:
+1. Cài đặt Docker:
 
    ```sh
    bash <(curl -sSL https://get.docker.com)
    ```
 
-2. Clone the Project Repository:
+2. Sao chép kho lưu trữ dự án:
 
    ```sh
    git clone https://github.com/MHSanaei/3x-ui.git
    cd 3x-ui
    ```
 
-3. Start the Service
+3. Bắt đầu dịch vụ
 
    ```sh
    docker compose up -d
    ```
 
-   OR
+   HOẶC
 
    ```sh
    docker run -itd \
@@ -103,7 +102,7 @@ systemctl restart x-ui
       ghcr.io/mhsanaei/3x-ui:latest
    ```
 
-update to latest version
+cập nhật lên phiên bản mới nhất
 
    ```sh
    cd 3x-ui
@@ -115,7 +114,7 @@ update to latest version
 </details>
 
 
-## Recommended OS
+## Hệ điều hành được đề xuất
 
 - Ubuntu 20.04+
 - Debian 11+
@@ -128,35 +127,33 @@ update to latest version
 - Rockylinux 9+
 
 
-## Languages
+## LNgôn ngữ
 
-- English
-- Farsi
-- Chinese
-- Russian
-- Vietnamese
-- Spanish
+- Tiếng Anh
+- Tiếng Ba Tư
+- Người Trung Quốc
+- Tiếng Nga
+- Tiếng Việt
+- Người Tây Ban Nha
 
+## Đặc trưng
 
-## Features
+Giám sát trạng thái hệ thống
+Tìm kiếm trong tất cả các thư đến và khách hàng
+Chủ đề tối/sáng
+Hỗ trợ nhiều người dùng và đa giao thức
+Hỗ trợ các giao thức, bao gồm VMess, VLES, Trojan, Shadowsocks, Dokodemo-door, Socks, HTTP, wireguard
+Hỗ trợ các giao thức gốc XTLS, bao gồm RPRX-Direct, Vision, REALITY
+Thống kê lưu lượng truy cập, giới hạn lưu lượng, giới hạn thời gian hết hạn
+Các mẫu cấu hình Xray có thể tùy chỉnh
+Hỗ trợ bảng truy cập HTTPS (tên miền tự cung cấp + chứng chỉ SSL)
+Hỗ trợ ứng dụng chứng chỉ SSL một cú nhấp chuột và tự động gia hạn
+Để biết thêm các mục cấu hình nâng cao, vui lòng tham khảo bảng điều khiển
+Sửa các tuyến API (cài đặt người dùng sẽ được tạo bằng API)
+Hỗ trợ thay đổi cấu hình theo các mục khác nhau được cung cấp trong bảng điều khiển.
+Hỗ trợ xuất/nhập cơ sở dữ liệu từ bảng điều khiển
 
-- System Status Monitoring
-- Search within all inbounds and clients
-- Dark/Light theme
-- Supports multi-user and multi-protocol
-- Supports protocols, including VMess, VLESS, Trojan, Shadowsocks, Dokodemo-door, Socks, HTTP, wireguard
-- Supports XTLS native Protocols, including RPRX-Direct, Vision, REALITY
-- Traffic statistics, traffic limit, expiration time limit
-- Customizable Xray configuration templates
-- Supports HTTPS access panel (self-provided domain name + SSL certificate)
-- Supports One-Click SSL certificate application and automatic renewal
-- For more advanced configuration items, please refer to the panel
-- Fixes API routes (user setting will be created with API)
-- Supports changing configs by different items provided in the panel.
-- Supports export/import database from the panel
-
-
-## Default Settings
+## Thiết lập mặc định
 
 <details>
   <summary>Click for default settings details</summary>
