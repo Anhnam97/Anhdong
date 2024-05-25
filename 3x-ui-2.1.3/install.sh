@@ -177,7 +177,7 @@ install_x-ui() {
     systemctl daemon-reload
     systemctl enable x-ui
     systemctl start x-ui
-    echo -e "{3X-UI V2.1.1} installation finished, it is running now..."
+    echo -e "{3X-UI V2.1.3} installation finished, it is running now..."
     echo -e ""
     echo -e "x-ui control menu usages: "
     echo -e "----------------------------------------------"
