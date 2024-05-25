@@ -18,7 +18,7 @@
 ## Install & Upgrade
 
 ```
-bash <(curl -Ls (https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.3/install.sh)
+bash <(curl -Ls https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.3/install.sh)
 ```
 
 ## Install Custom Version
@@ -26,7 +26,7 @@ bash <(curl -Ls (https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.3/instal
 To install your desired version, add the version to the end of the installation command. e.g., ver `v2.1.3`:
 
 ```
-bash <(curl -Ls [(https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.3/install.sh) v2.1.3
+bash <(curl -Ls https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.3/install.sh) v2.1.3
 ```
 
 ## SSL Certificate
