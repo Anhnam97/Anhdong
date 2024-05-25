@@ -142,7 +142,6 @@ install_x-ui() {
             exit 1
         fi
     else
-        last_version=$1
         url="https://github.com/Anhnam97/Anhdong/raw/main/x-ui-linux-$(arch3xui).tar.gz"
         echo -e "Beginning to install x-ui $1"
         wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch3xui).tar.gz ${url}
