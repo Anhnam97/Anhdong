@@ -29,7 +29,10 @@ To install your desired version, add the version to the end of the installation 
 bash <(curl -Ls https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.3/install.sh) v2.1.3
 ```
 ## PHIÊN BẢN 211
+```
 bash <(curl -Ls https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.1/install.sh) v2.1.1
+```
+
 ## SSL Certificate
 
 <details>
