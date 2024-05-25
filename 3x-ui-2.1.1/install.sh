@@ -173,7 +173,6 @@ install_x-ui() {
     chmod +x /usr/local/x-ui/x-ui.sh
     chmod +x /usr/bin/x-ui
     config_after_install
-
     systemctl daemon-reload
     systemctl enable x-ui
     systemctl start x-ui
