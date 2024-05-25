@@ -20,7 +20,7 @@
 ## Install & Upgrade
 
 ```
-bash <(curl -Ls https://github.com/Anhnam97/Anhdong/blob/main/3x-ui-2.1.1/install.sh))
+bash <(curl -Ls https://github.com/Anhnam97/Anhdong/blob/main/3x-ui-2.1.1/install.sh)
 ```
 
 ## Install Custom Version
