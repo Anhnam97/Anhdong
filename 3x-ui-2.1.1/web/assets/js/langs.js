@@ -29,6 +29,16 @@ const supportLangs = [
         value: 'es-ES',
         icon: '🇪🇸',
     },
+    {
+        name: 'Indonesian',
+        value: 'id-ID',
+        icon: '🇮🇩',
+    },
+    {
+        name: 'Український',
+        value: 'uk-UA',
+        icon: '🇺🇦',
+    },
 ];
 
 function getLang() {
