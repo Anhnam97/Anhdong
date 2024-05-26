@@ -5,7 +5,7 @@
                  @input="$emit('input', convertToGregorian($event.target.value)); jalaliDatepicker.hide();"
                  :placeholder="placeholder">
             <template #addonAfter>
-                <a-icon type="calendar" style="font-size: 16px;"/>
+                <a-icon type="calendar" style="font-size: 14px; opacity: 0.5;"/>
             </template>
         </a-input>
     </div>
@@ -13,9 +13,9 @@
 {{end}}
 
 {{define "component/persianDatepicker"}}
-<link rel="stylesheet" href="{{ .base_path }}assets/persian-datepicker/persian-datepicker.min.css"/>
-<script src="{{ .base_path }}assets/moment/moment-jalali.min.js"></script>
-<script src="{{ .base_path }}assets/persian-datepicker/persian-datepicker.min.js"></script>
+<link rel="stylesheet" href="{{ .base_path }}assets/persian-datepicker/persian-datepicker.min.css?{{ .cur_ver }}"/>
+<script src="{{ .base_path }}assets/moment/moment-jalali.min.js?{{ .cur_ver }}"></script>
+<script src="{{ .base_path }}assets/persian-datepicker/persian-datepicker.min.js?{{ .cur_ver }}"></script>
 <script>
 
     const persianDatepicker = {};
