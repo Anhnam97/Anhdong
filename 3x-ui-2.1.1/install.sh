@@ -129,7 +129,7 @@ config_after_install() {
 install_x-ui() {
     cd /usr/local/
     
-  if [ $# == 0 ]; then
+   if [ $# == 0 ]; then
         last_version=$(curl -Ls "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [[ ! -n "$last_version" ]]; then
             echo -e "${red}Failed to fetch x-ui version, it maybe due to Github API restrictions, please try it later${plain}"
