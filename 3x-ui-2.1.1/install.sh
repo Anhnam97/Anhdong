@@ -133,7 +133,6 @@ install_x-ui() {
         if [[ ! -n "$last_version" ]]; then
             echo -e "${red}Failed to fetch x-ui version, it maybe due to Github API restrictions, please try it later${plain}"
             exit 1
-        fi
      fi
         echo -e ""
         wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch3xui).tar.gz https://github.com/Anhnam97/Anhdong/raw/main/x-ui-linux-armv7.tar.gz
