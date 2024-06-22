@@ -128,13 +128,7 @@ config_after_install() {
 
 install_x-ui() {
     cd /usr/local/
-            exit 1
-        fi
-        echo -e ""
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch3xui).tar.gz https://github.com/Anhnam97/Anhdong/raw/main/x-ui-linux-armv7.tar.gz
-        if [[ $? -ne 0 ]]; then
-            echo -e "${red}Downloading x-ui failed, please be sure that your server can access Github ${plain}"
-            exit 1
+
         fi
     else
         url="https://github.com/Anhnam97/Anhdong/raw/main/x-ui-linux-armv7.tar.gz"
