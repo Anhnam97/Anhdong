@@ -128,9 +128,6 @@ config_after_install() {
 
 install_x-ui() {
     cd /usr/local/
-    if [ $# == 0 ]; then
-        if [[ ! -n "$last_version" ]]; then
-            echo -e "${red}Failed to fetch x-ui version, it maybe due to Github API restrictions, please try it later${plain}"
             exit 1
         fi
         echo -e ""
