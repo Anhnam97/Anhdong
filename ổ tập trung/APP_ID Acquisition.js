@@ -4,7 +4,7 @@ Tác giả sửa lỗi: GGcover
 Tham khảo: https://raw.githubusercontent.com/nhutggvn/Config-VPN/main/js/TF_keys.js
 Hướng dẫn sử dụng cụ thể:
 1: Nhập plugin.
-2: Bật Mitm qua Http2 trên trang Mitm.
+2: Bật Mitm qua HTTP2 trên trang Mitm.
 3: Khởi động VPN, vào ứng dụng TestFlight, và hiển thị thông báo thông tin đã được lấy thành công.
 4: Vào Cấu hình -> Dữ liệu Bền vững -> Nhập Dữ liệu Cụ thể. Điền key là "APP_ID" và value là ID của TF mà bạn muốn tham gia. (ID là chuỗi sau "join" trong liên kết https://testflight.apple.com/join/LPQmtkUs, ví dụ, "LPQmtkUs"). ⚠️: Hỗ trợ số lượng liên kết TF không giới hạn, mỗi liên kết cần được phân cách bằng dấu phẩy (chẳng hạn: LPQmtkUs, Hgun65jg, 8yhJgv)
 */
@@ -57,4 +57,26 @@ if (reg2.test($request.url)) {
 
 function unique(arr) {
     return Array.from(new Set(arr));
+}
+
+function handleResponse(error, resp, data) {
+    if (error) {
+        $notification.post("Lỗi yêu cầu", `Lỗi: ${error}`, '');
+        console.log(`Lỗi: ${error}`);
+        return;
+    }
+
+    if (resp.status !== 200) {
+        $notification.post("Lỗi yêu cầu", `Mã trạng thái: ${resp.status}`, '');
+        console.log(`Mã trạng thái: ${resp.status}`);
+        return;
+    }
+
+    try {
+        let jsonData = JSON.parse(data);
+        console.log("Dữ liệu JSON nhận được:", jsonData);
+    } catch (e) {
+        $notification.post("Lỗi phân tích JSON", "Dữ liệu nhận được không phải là JSON.", '');
+        console.log("Lỗi phân tích JSON:", e);
+    }
 }
