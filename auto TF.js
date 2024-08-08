@@ -4,7 +4,6 @@ Tác giả sửa lỗi: GGcover
 Tham khảo: https://raw.githubusercontent.com/nhutggvn/Config-VPN/main/js/Auto_join_TF.js
 Cảm ơn người đã thích ứng script này thành phiên bản Loon!
 */
-
 !(async () => {
   let ids = $persistentStore.read("APP_ID");
   if (ids == null) {
@@ -43,12 +42,8 @@ function autoPost(ID) {
       { url: `${testurl}${ID}`, headers: header },
       function (error, resp, data) {
         if (error) {
-          if (error === "The request timed out.") {
-            $notification.post("Lỗi yêu cầu", "Yêu cầu đã hết thời gian chờ.", "");
-          } else {
-            $notification.post("Lỗi yêu cầu", error, "");
-          }
           console.log(`Lỗi khi thực hiện GET: ${error}`);
+          $notification.post("Lỗi yêu cầu", error, "");
           resolve();
           return;
         }
@@ -65,8 +60,8 @@ function autoPost(ID) {
 
         try {
           const jsonData = JSON.parse(data);
-          if (jsonData.data == null) {
-            console.log(`${ID} ${jsonData.messages[0].message}`);
+          if (!jsonData || !jsonData.data) {
+            console.log(`${ID} không trả về dữ liệu hợp lệ: ${data}`);
             resolve();
             return;
           }
@@ -81,8 +76,8 @@ function autoPost(ID) {
             { url: `${testurl}${ID}/accept`, headers: header },
             function (error, resp, body) {
               if (error) {
-                $notification.post("Lỗi khi tham gia", error, "");
                 console.log(`Lỗi khi thực hiện POST: ${error}`);
+                $notification.post("Lỗi khi tham gia", error, "");
                 resolve();
                 return;
               }
@@ -106,7 +101,7 @@ function autoPost(ID) {
             }
           );
         } catch (e) {
-          console.log(`Lỗi khi xử lý phản hồi GET: ${e.message}`);
+          console.log(`Phản hồi không phải JSON hợp lệ: ${data}`);
           resolve();
         }
       }
