@@ -72,6 +72,13 @@ function handleResponse(error, resp, data) {
         return;
     }
 
+    // Kiểm tra xem phản hồi có phải là HTML không
+    if (data.startsWith('<')) {
+        $notification.post("Lỗi phản hồi", "Dữ liệu nhận được là HTML, không phải JSON.", '');
+        console.log("Dữ liệu nhận được là HTML:", data);
+        return;
+    }
+
     try {
         let jsonData = JSON.parse(data);
         console.log("Dữ liệu JSON nhận được:", jsonData);
