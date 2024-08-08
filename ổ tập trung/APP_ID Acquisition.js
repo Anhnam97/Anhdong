@@ -59,31 +59,54 @@ function unique(arr) {
     return Array.from(new Set(arr));
 }
 
-function handleResponse(error, resp, data) {
-    if (error) {
-        $notification.post("Lỗi yêu cầu", `Lỗi: ${error}`, '');
-        console.log(`Lỗi: ${error}`);
-        return;
-    }
-
-    if (resp.status !== 200) {
-        $notification.post("Lỗi yêu cầu", `Mã trạng thái: ${resp.status}`, '');
-        console.log(`Mã trạng thái: ${resp.status}`);
-        return;
-    }
-
-    // Kiểm tra xem phản hồi có phải là HTML không
-    if (data.startsWith('<')) {
-        $notification.post("Lỗi phản hồi", "Dữ liệu nhận được là HTML, không phải JSON.", '');
-        console.log("Dữ liệu nhận được là HTML:", data);
-        return;
-    }
+// Function to automatically join TestFlight
+async function autoJoinTestFlight(id) {
+    let key = $persistentStore.read("key");
+    let testurl = `https://testflight.apple.com/v3/accounts/${key}/ru/`;
+    let headers = {
+        "X-Session-Id": $persistentStore.read("session_id"),
+        "X-Session-Digest": $persistentStore.read("session_digest"),
+        "X-Request-Id": $persistentStore.read("request_id"),
+        "User-Agent": $persistentStore.read("tf_ua"),
+    };
 
     try {
-        let jsonData = JSON.parse(data);
-        console.log("Dữ liệu JSON nhận được:", jsonData);
-    } catch (e) {
-        $notification.post("Lỗi phân tích JSON", "Dữ liệu nhận được không phải là JSON.", '');
-        console.log("Lỗi phân tích JSON:", e);
+        let response = await $httpClient.get({ url: `${testurl}${id}`, headers: headers });
+        if (response.status === 404) {
+            console.log(`${id} không tồn tại trong TestFlight. APP_ID đã được tự động gỡ bỏ.`);
+            $notification.post(id, "Không tìm thấy TestFlight", "APP_ID đã được tự động gỡ bỏ.");
+            return;
+        }
+
+        let jsonData = JSON.parse(response.body);
+        if (jsonData.data === null) {
+            console.log(`${id} - ${jsonData.messages[0].message}`);
+            return;
+        }
+
+        if (jsonData.data.status === "FULL") {
+            console.log(`${jsonData.data.app.name} ${id} - ${jsonData.data.message}`);
+            return;
+        }
+
+        let postResponse = await $httpClient.post({ url: `${testurl}${id}/accept`, headers: headers });
+        let jsonPostData = JSON.parse(postResponse.body);
+        $notification.post(jsonPostData.data.name, "Đã tham gia TestFlight thành công", "");
+        console.log(`${jsonPostData.data.name} - Đã tham gia TestFlight thành công`);
+
+    } catch (error) {
+        $notification.post("Lỗi tự động tham gia TestFlight", `Lỗi: ${error}`, '');
+        console.log(`Lỗi: ${error}`);
     }
 }
+
+(async () => {
+    let appId = $persistentStore.read("APP_ID");
+    if (appId) {
+        let ids = appId.split(",");
+        for (const id of ids) {
+            await autoJoinTestFlight(id);
+        }
+    }
+    $done({});
+})();
