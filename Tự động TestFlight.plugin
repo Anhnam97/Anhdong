@@ -12,7 +12,7 @@ DOMAIN, testflight.apple.com, PROXY
 
 [Script]
 http-request ^https?:\/\/testflight\.apple\.com\/v3\/accounts\/.*\/apps$ script-path = https://raw.githubusercontent.com/nhutggvn/Config-VPN/main/js/TF_keys.js, tag = Lấy Thông Tin Dữ liệu
-http-request ^https://testflight.apple.com/join/(.*) script-path = https://raw.githubusercontent.com/nhutggvn/Config-VPN/main/js/TF_keys.js, tag = APP_ID Acquisition
+http-request ^https://testflight.apple.com/join/(.*) script-path = https://github.com/Anhnam97/Anhdong/raw/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/APP_ID%20Acquisition.js, tag = APP_ID Acquisition
 cron "*/1 * * * * *" script-path = https://github.com/Anhnam97/Anhdong/raw/main/auto%20TF.js, tag = Tự động Tham Gia TestFlight, timeout = 180
 
 [Mitm]
