@@ -132,13 +132,13 @@ install_x-ui() {
     if [ $# -eq 0 ]; then
         # Không kiểm tra phiên bản, tải tệp trực tiếp
         echo -e ""
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch3xui).tar.gz https://github.com/Anhnam97/Anhdong/raw/main/x-ui-linux-armv7%20V2.1.3.tar.gz
+        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch3xui).tar.gz https://github.com/Anhnam97/Anhdong/raw/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/x-ui-linux-arm64.tar.gz
         if [[ $? -ne 0 ]]; then
             echo -e "${red}Downloading x-ui failed, please be sure that your server can access Github ${plain}"
             exit 1
         fi
     else
-        url="https://github.com/Anhnam97/Anhdong/raw/main/x-ui-linux-armv7%20V2.1.3.tar.gz"
+        url="https://github.com/Anhnam97/Anhdong/raw/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/x-ui-linux-arm64.tar.gz"
         echo -e "Beginning to install x-ui $1"
         wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch3xui).tar.gz ${url}
         if [[ $? -ne 0 ]]; then
