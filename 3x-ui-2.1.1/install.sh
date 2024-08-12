@@ -129,20 +129,16 @@ config_after_install() {
 install_x-ui() {
     cd /usr/local/
 
-    if [ $# == 0 ]; then
-        last_version=$(curl -Ls "https://api.github.com/repos/MHSanaei/3x-ui/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-        if [[ ! -n "$last_version" ]]; then
-            echo -e "${red}Failed to fetch x-ui version, it maybe due to Github API restrictions, please try it later${plain}"
-            exit 1
-        fi
+    if [ $# -eq 0 ]; then
+        # Không kiểm tra phiên bản, tải tệp trực tiếp
         echo -e ""
-        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch3xui).tar.gz https://github.com/Anhnam97/Anhdong/raw/main/x-ui-linux-armv7.tar.gz
+        wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch3xui).tar.gz https://github.com/Anhnam97/Anhdong/raw/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/x-ui-linux-amd64%202.1.1.tar.gz
         if [[ $? -ne 0 ]]; then
             echo -e "${red}Downloading x-ui failed, please be sure that your server can access Github ${plain}"
             exit 1
         fi
     else
-        url="https://github.com/Anhnam97/Anhdong/raw/main/x-ui-linux-armv7.tar.gz"
+        url="https://github.com/Anhnam97/Anhdong/raw/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/x-ui-linux-amd64%202.1.1.tar.gz"
         echo -e "Beginning to install x-ui $1"
         wget -N --no-check-certificate -O /usr/local/x-ui-linux-$(arch3xui).tar.gz ${url}
         if [[ $? -ne 0 ]]; then

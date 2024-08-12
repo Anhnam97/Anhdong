@@ -141,7 +141,7 @@ custom_version() {
         exit 1
     fi
 
-    download_link="https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh"
+    download_link="https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.3/install.sh"
 
     # Use the entered panel version in the download link
     install_command="bash <(curl -Ls $download_link) v$panel_version"
@@ -377,7 +377,7 @@ enable_bbr() {
 }
 
 update_shell() {
-    wget -O /usr/bin/x-ui -N --no-check-certificate https://github.com/MHSanaei/3x-ui/raw/main/x-ui.sh
+    wget -O /usr/bin/x-ui -N --no-check-certificate https://github.com/Anhnam97/Anhdong/raw/main/3x-ui-2.1.3/install.sh
     if [[ $? != 0 ]]; then
         echo ""
         LOGE "Failed to download script, Please check whether the machine can connect Github"
