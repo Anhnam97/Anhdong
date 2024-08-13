@@ -1,4 +1,4 @@
-# 3X-UI
+# 3X-UI amd64
 
 **An Advanced Web Panel • Built on Xray Core**
 
