@@ -392,6 +392,8 @@ Nhập ID người dùng vào trường số 4. Các tài khoản Telegram với
 | `POST` | `"/resetAllClientTraffics/:id"`    | Đặt lại lưu lượng của tất cả khách hàng trong một inbound |
 | `POST` | `"/delDepletedClients/:id"`
 
+
+
 ## Xem Trước
 
 ![1](./media/1.png)
