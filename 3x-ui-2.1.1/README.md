@@ -1,4 +1,4 @@
-# 3X-UI
+# 3X-UI amd64
 
 **Bảng điều khiển web nâng cao • Được xây dựng trên Xray Core BẢN CỐ ĐỊNH 2.1.1**
 
