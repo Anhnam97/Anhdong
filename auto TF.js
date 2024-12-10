@@ -107,6 +107,7 @@ function autoPost(ID) {
                   "TestFlight đầy",
                   jsonData.data.message
                 );
+                console.log(`ID ${ID} đầy`);
                 resolve();
               } else {
                 $httpClient.post(
@@ -124,6 +125,7 @@ function autoPost(ID) {
                     $persistentStore.write(ids.toString(), "APP_ID");
                     console.log("Cập nhật danh sách APP_ID sau khi tham gia:", ids); // In ra danh sách APP_ID sau khi cập nhật
                     sendMessageToTelegram(`${jsonBody.data.name} đã tham gia thành công`);
+                    console.log(`ID ${ID} đã hoàn thành`);
                     resolve();
                   }
                 );
@@ -136,7 +138,7 @@ function autoPost(ID) {
           }
         } else {
           if (error == "The request timed out.") {
-            console.log("Yêu cầu đã hết thời gian cho ID:", ID);
+            console.log(`Yêu cầu đã hết thời gian cho ID: ${ID}`);
             resolve();
           } else {
             $notification.post("Tự động tham gia TestFlight", error, "");
