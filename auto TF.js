@@ -90,11 +90,7 @@ function autoPost(ID) {
                 console.log(
                   jsonData.data.app.name + " " + ID + " " + jsonData.data.message
                 );
-                $notification.post(
-                  jsonData.data.app.name,
-                  "TestFlight đầy",
-                  jsonData.data.message
-                );
+                console.log("TestFlight đã đầy: " + jsonData.data.message); // Thông báo trong phần log
                 resolve();
               } else {
                 $httpClient.post(
