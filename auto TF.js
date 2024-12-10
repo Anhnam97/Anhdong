@@ -5,26 +5,32 @@ Tác giả sửa chữa: xream
 Cảm ơn một đại ca nào đó đã chuyển đổi thành script phiên bản Loon!
 */
 !(async () => {
+  console.log("Bắt đầu script...");
   ids = $persistentStore.read("APP_ID");
   if (ids == null) {
+    console.log("Không tìm thấy APP_ID");
     $notification.post(
       "Chưa thêm TestFlight APP_ID",
       "Vui lòng thêm thủ công hoặc sử dụng liên kết TestFlight để tự động lấy",
       ""
     );
   } else if (ids == "") {
+    console.log("Tất cả TestFlight đã được tham gia");
     $notification.post("Tất cả TestFlight đã được tham gia", "Vui lòng tắt plugin này thủ công", "");
   } else {
     ids = ids.split(",");
+    console.log("Danh sách APP_ID:", ids);
     for await (const ID of ids) {
       await autoPost(ID);
     }
   }
+  console.log("Kết thúc script...");
   $done();
 })();
 
 function sendMessageToTelegram(message) {
   return new Promise((resolve, reject) => {
+    console.log("Gửi tin nhắn Telegram:", message);
     const chat_id = "-1002071368028";
     const telegrambot_token = "6675183376:AAFIHE7oDIHTb1vtOsZMLunu9oEcD0DwPTM";
     const url = `https://api.telegram.org/bot${telegrambot_token}/sendMessage`;
@@ -56,6 +62,7 @@ function sendMessageToTelegram(message) {
 }
 
 function autoPost(ID) {
+  console.log("Bắt đầu autoPost với ID:", ID);
   let Key = $persistentStore.read("key");
   let testurl = "https://testflight.apple.com/v3/accounts/" + Key + "/ru/";
   let header = {
@@ -69,6 +76,7 @@ function autoPost(ID) {
       { url: testurl + ID, headers: header },
       function (error, resp, data) {
         if (error == null) {
+          console.log("Nhận được phản hồi từ TestFlight:", data);
           if (resp.status == 404) {
             ids = $persistentStore.read("APP_ID").split(",");
             ids = ids.filter((ids) => ids !== ID);
