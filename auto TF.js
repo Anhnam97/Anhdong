@@ -21,6 +21,7 @@ Cảm ơn một đại ca nào đó đã chuyển đổi thành script phiên b�
     ids = ids.split(",");
     console.log("Danh sách APP_ID:", ids);
     for await (const ID of ids) {
+      console.log("Đang xử lý ID:", ID); // Thông báo ID hiện tại
       await autoPost(ID);
     }
   }
@@ -76,7 +77,8 @@ function autoPost(ID) {
       { url: testurl + ID, headers: header },
       function (error, resp, data) {
         if (error == null) {
-          console.log("Nhận được phản hồi từ TestFlight:", data);
+          console.log("Nhận được phản hồi từ TestFlight cho ID:", ID);
+          console.log("Dữ liệu phản hồi:", data);
           if (resp.status == 404) {
             ids = $persistentStore.read("APP_ID").split(",");
             ids = ids.filter((ids) => ids !== ID);
@@ -132,10 +134,11 @@ function autoPost(ID) {
           }
         } else {
           if (error == "The request timed out.") {
+            console.log("Yêu cầu đã hết thời gian cho ID:", ID);
             resolve();
           } else {
             $notification.post("Tự động tham gia TestFlight", error, "");
-            console.log(ID + " " + error);
+            console.log("Lỗi cho ID:", ID, error);
             resolve();
           }
         }
