@@ -21,8 +21,10 @@ Cảm ơn một đại ca nào đó đã chuyển đổi thành script phiên b�
     ids = ids.split(",");
     console.log("Danh sách APP_ID ban đầu:", ids);
     for await (const ID of ids) {
-      console.log("Đang xử lý ID:", ID); // Thông báo ID hiện tại
-      await autoPost(ID);
+      if (ID) {
+        console.log("Đang xử lý ID:", ID); // Thông báo ID hiện tại
+        await autoPost(ID);
+      }
     }
   }
   console.log("Kết thúc script...");
