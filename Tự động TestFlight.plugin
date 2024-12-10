@@ -1,8 +1,8 @@
-#!name = Automatic TestFlight Joiner
-#!desc = Automatically monitors TestFlight availability and instantly joins when new slots become available.
+#!name = TestFlight tự động
+#!desc = Tự động theo dõi tính khả dụng của TestFlight và tham gia ngay khi có suất mới.
 #!openUrl = 
-#!author = GGcover
-#!homepage = https://github.com/nhutggvn/Config-VPN/blob/main/Auto_Join_TF.plugin
+#!author = Anhdong cover
+#!homepage = https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/Tu%CC%9B%CC%A3%20%C4%91o%CC%A3%CC%82ng%20TestFlight.plugin
 #!icon = https://raw.githubusercontent.com/nhutggvn/Config-VPN/main/png/TestFlight.png
 #!input = APP_ID
 #!date = 2024-03-07 22:10:30
