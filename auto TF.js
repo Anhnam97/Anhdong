@@ -37,6 +37,21 @@ function autoPost(ID) {
       { url: testurl + ID, headers: header },
       function (error, resp, data) {
         if (error == null) {
+          console.log("Nhận được phản hồi từ TestFlight cho ID:", ID);
+          if (data.startsWith("<")) {
+            console.error("Phản hồi là HTML, không phải JSON:", data);
+            resolve();
+            return;
+          }
+          let jsonData;
+          try {
+            jsonData = JSON.parse(data);
+          } catch (e) {
+            console.error("Lỗi phân tích JSON:", e);
+            console.error("Dữ liệu trả về:", data);
+            resolve();
+            return;
+          }
           if (resp.status == 404) {
             ids = $persistentStore.read("APP_ID").split(",");
             ids = ids.filter((ids) => ids !== ID);
@@ -47,35 +62,37 @@ function autoPost(ID) {
               "Không tồn tại TestFlight này",
               "Đã tự động xóa APP_ID"
             );
-            resolve();
+          } else if (jsonData.data == null) {
+            console.log(ID + " " + jsonData.messages[0].message);
+          } else if (jsonData.data.status == "FULL") {
+            console.log(
+              jsonData.data.app.name + " " + ID + " " + jsonData.data.message
+            );
           } else {
-            let jsonData = JSON.parse(data);
-            if (jsonData.data == null) {
-              console.log(ID + " " + jsonData.messages[0].message);
-              resolve();
-            } else if (jsonData.data.status == "FULL") {
-              console.log(
-                jsonData.data.app.name + " " + ID + " " + jsonData.data.message
-              );
-              resolve();
-            } else {
-              $httpClient.post(
-                { url: testurl + ID + "/accept", headers: header },
-                function (error, resp, body) {
-                  let jsonBody = JSON.parse(body);
-                  $notification.post(
-                    jsonBody.data.name,
-                    "Tham gia TestFlight thành công",
-                    ""
-                  );
-                  console.log(jsonBody.data.name + " Tham gia TestFlight thành công");
-                  ids = $persistentStore.read("APP_ID").split(",");
-                  ids = ids.filter((ids) => ids !== ID);
-                  $persistentStore.write(ids.toString(), "APP_ID");
+            $httpClient.post(
+              { url: testurl + ID + "/accept", headers: header },
+              function (error, resp, body) {
+                let jsonBody;
+                try {
+                  jsonBody = JSON.parse(body);
+                } catch (e) {
+                  console.error("Lỗi phân tích JSON:", e);
+                  console.error("Dữ liệu trả về:", body);
                   resolve();
+                  return;
                 }
-              );
-            }
+                $notification.post(
+                  jsonBody.data.name,
+                  "Tham gia TestFlight thành công",
+                  ""
+                );
+                console.log(jsonBody.data.name + " Tham gia TestFlight thành công");
+                ids = $persistentStore.read("APP_ID").split(",");
+                ids = ids.filter((ids) => ids !== ID);
+                $persistentStore.write(ids.toString(), "APP_ID");
+                resolve();
+              }
+            );
           }
         } else {
           if (error == "The request timed out.") {
