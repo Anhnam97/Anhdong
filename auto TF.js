@@ -19,7 +19,7 @@ Cảm ơn một đại ca nào đó đã chuyển đổi thành script phiên b�
     $notification.post("Tất cả TestFlight đã được tham gia", "Vui lòng tắt plugin này thủ công", "");
   } else {
     ids = ids.split(",");
-    console.log("Danh sách APP_ID:", ids);
+    console.log("Danh sách APP_ID ban đầu:", ids);
     for await (const ID of ids) {
       console.log("Đang xử lý ID:", ID); // Thông báo ID hiện tại
       await autoPost(ID);
@@ -83,6 +83,7 @@ function autoPost(ID) {
             ids = $persistentStore.read("APP_ID").split(",");
             ids = ids.filter((ids) => ids !== ID);
             $persistentStore.write(ids.toString(), "APP_ID");
+            console.log("Cập nhật danh sách APP_ID sau khi xóa:", ids); // In ra danh sách APP_ID sau khi cập nhật
             console.log(ID + " Không tồn tại TestFlight này, đã tự động xóa APP_ID");
             $notification.post(
               ID,
@@ -121,6 +122,7 @@ function autoPost(ID) {
                     ids = $persistentStore.read("APP_ID").split(",");
                     ids = ids.filter((ids) => ids !== ID);
                     $persistentStore.write(ids.toString(), "APP_ID");
+                    console.log("Cập nhật danh sách APP_ID sau khi tham gia:", ids); // In ra danh sách APP_ID sau khi cập nhật
                     sendMessageToTelegram(`${jsonBody.data.name} đã tham gia thành công`);
                     resolve();
                   }
