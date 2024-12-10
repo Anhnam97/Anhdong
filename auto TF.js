@@ -90,6 +90,11 @@ function autoPost(ID) {
                 console.log(
                   jsonData.data.app.name + " " + ID + " " + jsonData.data.message
                 );
+                $notification.post(
+                  jsonData.data.app.name,
+                  "TestFlight đầy",
+                  jsonData.data.message
+                );
                 resolve();
               } else {
                 $httpClient.post(
