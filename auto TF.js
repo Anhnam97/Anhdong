@@ -139,6 +139,7 @@ function autoPost(ID) {
             }
           }
         } else {
+          console.error(`Lỗi khi gửi yêu cầu cho ID: ${ID}`, error);
           if (error == "The request timed out.") {
             console.log(`Yêu cầu đã hết thời gian cho ID: ${ID}`);
             resolve();
