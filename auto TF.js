@@ -6,6 +6,7 @@ Cảm ơn một đại ca nào đó đã chuyển đổi thành script phiên b�
 */
 !(async () => {
   console.log("Bắt đầu script...");
+  await sendMessageToTelegram("Bắt đầu script...");
   ids = $persistentStore.read("APP_ID");
   if (ids == null) {
     console.log("Không tìm thấy APP_ID");
@@ -14,20 +15,25 @@ Cảm ơn một đại ca nào đó đã chuyển đổi thành script phiên b�
       "Vui lòng thêm thủ công hoặc sử dụng liên kết TestFlight để tự động lấy",
       ""
     );
+    await sendMessageToTelegram("Không tìm thấy APP_ID");
   } else if (ids == "") {
     console.log("Tất cả TestFlight đã được tham gia");
     $notification.post("Tất cả TestFlight đã được tham gia", "Vui lòng tắt plugin này thủ công", "");
+    await sendMessageToTelegram("Tất cả TestFlight đã được tham gia");
   } else {
     ids = ids.split(",");
     console.log("Danh sách APP_ID ban đầu:", ids);
+    await sendMessageToTelegram("Danh sách APP_ID ban đầu: " + ids.join(", "));
     for await (const ID of ids) {
       if (ID) {
         console.log("Đang xử lý ID:", ID); // Thông báo ID hiện tại
+        await sendMessageToTelegram("Đang xử lý ID: " + ID);
         await autoPost(ID);
       }
     }
   }
   console.log("Kết thúc script...");
+  await sendMessageToTelegram("Kết thúc script...");
   $done();
 })();
 
@@ -77,7 +83,7 @@ function autoPost(ID) {
   return new Promise(function (resolve) {
     $httpClient.get(
       { url: testurl + ID, headers: header },
-      function (error, resp, data) {
+      async function (error, resp, data) {
         if (error == null) {
           console.log("Nhận được phản hồi từ TestFlight cho ID:", ID);
           console.log("Dữ liệu phản hồi:", data);
@@ -92,12 +98,14 @@ function autoPost(ID) {
               "Không tồn tại TestFlight này",
               "Đã tự động xóa APP_ID"
             );
+            await sendMessageToTelegram(`Không tồn tại TestFlight ${ID}, đã tự động xóa APP_ID`);
             resolve();
           } else {
             try {
               let jsonData = JSON.parse(data);
               if (jsonData.data == null) {
                 console.log(ID + " " + jsonData.messages[0].message);
+                await sendMessageToTelegram(`${ID} ${jsonData.messages[0].message}`);
                 resolve();
               } else if (jsonData.data.status == "FULL") {
                 console.log(
@@ -109,13 +117,13 @@ function autoPost(ID) {
                   "TestFlight đầy",
                   jsonData.data.message
                 );
-                sendMessageToTelegram(`Ứng dụng ${jsonData.data.app.name} (ID: ${ID}) đã đầy`);
+                await sendMessageToTelegram(`Ứng dụng ${jsonData.data.app.name} (ID: ${ID}) đã đầy`);
                 console.log(`ID ${ID} đầy`);
                 resolve();
               } else {
                 $httpClient.post(
                   { url: testurl + ID + "/accept", headers: header },
-                  function (error, resp, body) {
+                  async function (error, resp, body) {
                     let jsonBody = JSON.parse(body);
                     $notification.post(
                       jsonBody.data.name,
@@ -123,34 +131,6 @@ function autoPost(ID) {
                       ""
                     );
                     console.log(jsonBody.data.name + " Tham gia TestFlight thành công");
+                    await sendMessageToTelegram(`${jsonBody.data.name} đã tham gia thành công`);
                     ids = $persistentStore.read("APP_ID").split(",");
-                    ids = ids.filter((ids) => ids !== ID);
-                    $persistentStore.write(ids.toString(), "APP_ID");
-                    console.log("Cập nhật danh sách APP_ID sau khi tham gia:", ids); // In ra danh sách APP_ID sau khi cập nhật
-                    sendMessageToTelegram(`${jsonBody.data.name} đã tham gia thành công`);
-                    console.log(`ID ${ID} đã hoàn thành`);
-                    resolve();
-                  }
-                );
-              }
-            } catch (e) {
-              console.error("Lỗi phân tích JSON:", e);
-              console.error("Dữ liệu trả về:", data);
-              resolve();
-            }
-          }
-        } else {
-          console.error(`Lỗi khi gửi yêu cầu cho ID: ${ID}`, error);
-          if (error == "The request timed out.") {
-            console.log(`Yêu cầu đã hết thời gian cho ID: ${ID}`);
-            resolve();
-          } else {
-            $notification.post("Tự động tham gia TestFlight", error, "");
-            console.log("Lỗi cho ID:", ID, error);
-            resolve();
-          }
-        }
-      }
-    );
-  });
-}
+                    ids = ids.filter
