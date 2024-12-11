@@ -34,8 +34,8 @@ Cảm ơn một đại ca nào đó đã chuyển đổi thành script phiên b�
 function sendMessageToTelegram(message) {
   return new Promise((resolve, reject) => {
     console.log("Gửi tin nhắn Telegram:", message);
-    const chat_id = "-1002071368028";
-    const telegrambot_token = "6675183376:AAFIHE7oDIHTb1vtOsZMLunu9oEcD0DwPTM";
+    const chat_id = "-5487400539";
+    const telegrambot_token = "27336567:1fba090431fd28958b1f1e2ba6c755f8";
     const url = `https://api.telegram.org/bot${telegrambot_token}/sendMessage`;
     const body = {
       chat_id: chat_id,
