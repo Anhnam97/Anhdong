@@ -30,12 +30,17 @@ Cảm ơn một đại ca nào đó đã chuyển đổi thành script phiên b�
         }
       }
       console.log("Kết thúc script...");
+      await delay(60000); // Thời gian chờ 60 giây trước khi chạy lại
     } catch (error) {
       console.error("Lỗi trong script:", error);
     }
   }
   $done();
 })();
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function autoPost(ID) {
   console.log("Bắt đầu autoPost với ID:", ID);
