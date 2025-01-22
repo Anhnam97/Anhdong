@@ -10,10 +10,13 @@ let uid = document.cookie.split(';').find(cookie => cookie.includes('c_user')).s
     console.log('---------------------------');
     console.log('Chuẩn bị bỏ theo dõi...');
     
+    if (!window.location.href.includes('https://www.facebook.com/me/following')) {
+        console.error('Vui lòng điều hướng đến https://www.facebook.com/me/following trước khi chạy đoạn mã này.');
+        return;
+    }
+
     try {
-        let routeInfo = await getFollowingRouteInfo();
-        console.log('Lấy danh sách đang theo dõi...');
-        let allFollowing = await getAllFollowing(routeInfo, 500);
+        let allFollowing = await getAllFollowing(500);
         let notFriends = allFollowing.filter(user => user.node.__typename === 'User');
         console.log(`${notFriends.length} người dùng sẽ bị bỏ theo dõi...`);
         console.log('---------------------------');
@@ -31,32 +34,13 @@ let uid = document.cookie.split(';').find(cookie => cookie.includes('c_user')).s
     }
 })();
 
-function getNextListFollowing(collection, cursor, count) {
-    return new Promise((resolve, reject) => {
-        request('POST', 'https://www.facebook.com/api/graphql/', {
-            fb_dtsg: fbDtsg,
-            fb_api_caller_class: 'RelayModern',
-            fb_api_req_friendly_name: 'ProfileCometAppCollectionListRendererPaginationQuery',
-            variables: { count, cursor, scale: 1, search: null, id: collection.collectionToken },
-            doc_id: 'abdd4b9c393ee'
-        }).then(response => {
-            try {
-                let data = JSON.parse(response);
-                resolve(data.data.node.pageItems);
-            } catch (error) {
-                reject(error);
-            }
-        }).catch(reject);
-    });
-}
-
-function getAllFollowing(collection, count) {
+function getAllFollowing(count) {
     return new Promise((resolve, reject) => {
         request('POST', 'https://www.facebook.com/api/graphql/', {
             fb_dtsg: fbDtsg,
             fb_api_caller_class: 'RelayModern',
             fb_api_req_friendly_name: 'ProfileCometTopAppSectionQuery',
-            variables: { collectionToken: collection.collectionToken, scale: 1, sectionToken: collection.sectionToken, userID: uid },
+            variables: { count, scale: 1, userID: uid },
             doc_id: 'bf03dcd6ed9ef'
         }).then(response => {
             try {
@@ -68,7 +52,7 @@ function getAllFollowing(collection, count) {
 
                 async function fetchAll(cursor) {
                     if (hasNextPage) {
-                        let nextPageItems = await getNextListFollowing(collection, cursor, count);
+                        let nextPageItems = await getNextListFollowing(cursor, count);
                         allItems = allItems.concat(nextPageItems.edges);
                         hasNextPage = nextPageItems.page_info.has_next_page;
                         endCursor = nextPageItems.page_info.end_cursor;
@@ -86,17 +70,18 @@ function getAllFollowing(collection, count) {
     });
 }
 
-function getFollowingRouteInfo() {
+function getNextListFollowing(cursor, count) {
     return new Promise((resolve, reject) => {
-        request('POST', 'https://www.facebook.com/ajax/bulk-route-definitions/', {
+        request('POST', 'https://www.facebook.com/api/graphql/', {
             fb_dtsg: fbDtsg,
-            route_urls: [window.location.pathname + window.location.search]
+            fb_api_caller_class: 'RelayModern',
+            fb_api_req_friendly_name: 'ProfileCometAppCollectionListRendererPaginationQuery',
+            variables: { count, cursor, scale: 1, search: null, id: uid },
+            doc_id: 'abdd4b9c393ee'
         }).then(response => {
             try {
-                let data = JSON.parse(response.slice(9));
-                let routeKey = Object.keys(data.payload)[0];
-                let routeProps = data.payload.payloads[routeKey].rootView.props;
-                resolve(routeProps);
+                let data = JSON.parse(response);
+                resolve(data.data.node.pageItems);
             } catch (error) {
                 reject(error);
             }
