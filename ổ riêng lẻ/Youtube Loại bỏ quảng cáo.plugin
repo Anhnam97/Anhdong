@@ -1,0 +1,44 @@
+#!name = Youtube (Music)
+#!desc = Lọc quảng cáo Youtube (Music), thêm chức năng hình trong hình, dịch phụ đề, dịch lời bài hát và hỗ trợ phát nhạc trong nền. Cần bật chế độ bảo vệ QUIC. Không hỗ trợ các thiết bị tvOS.
+#!openUrl = https://apps.apple.com/app/id544007664
+#!author = Maasea[https://github.com/Maasea], VirgilClyne[https://github.com/VirgilClyne], Choler[https://github.com/Choler], DivineEngine[https://github.com/DivineEngine], app2smile[https://github.com/app2smile]
+#!tag = Loại bỏ quảng cáo
+#!system =
+#!system_version =
+#!loon_version = 3.2.6(821)
+#!homepage = https://github.com/sooyaaabo/Loon/blob/main/README.md
+#!icon = https://raw.githubusercontent.com/sooyaaabo/Loon/main/Icon/App-Icon/YouTube.png
+#!date = 2025-02-04 17:00
+
+# 2024-11-24
+# https://github.com/Maasea/sgmodule/blob/master/YouTube.Enhance.sgmodule
+# 2024-11-28 02:07:31
+# https://kelee.one/Tool/Loon/Plugin/YouTube_remove_ads.plugin
+
+# Chức năng hình trong hình và phát nhạc trong nền của YouTube có thể tắt trong ứng dụng khách
+#   - Cài đặt -> Phát -> Hình trong hình
+#   - Cài đặt -> Phát và tải về -> Phát trong nền
+
+[Argument]
+blockUpload = switch, true, false, tag = Ẩn nút tải lên, desc = Có ẩn nút tải lên hay không
+blockImmersive = switch, true, false, tag = Ẩn nút chọn phân đoạn, desc = Có ẩn nút chọn phân đoạn hay không
+captionLang = select, "zh-Hans", "zh-Hant", "ja", "ko", "en", "off", tag = Ngôn ngữ dịch phụ đề, desc = Chọn ngôn ngữ dịch phụ đề
+lyricLang = select, "zh-Hans", "zh-Hant", "ja", "ko", "en", "off", tag = Ngôn ngữ dịch lời bài hát, desc = Chọn ngôn ngữ dịch lời bài hát
+debug = switch, false, true, tag = Bật chế độ gỡ lỗi, desc = Có bật chế độ gỡ lỗi hay không
+
+[Rule]
+AND, ((DOMAIN-SUFFIX, googlevideo.com),  (PROTOCOL, QUIC)), REJECT
+AND, ((DOMAIN-SUFFIX, youtubei.googleapis.com),  (PROTOCOL, QUIC)), REJECT
+
+[Rewrite]
+^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad mock-response-body data-type=text status-code=502
+# Loại bỏ tham số theo dõi trong liên kết ngắn
+(^https:\/\/youtu\.be\/[\w-]+)(?:\?si=\w+) 307 $1
+
+[Script]
+# http-request ^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:browse|next|player|reel\/reel_watch_sequence|get_watch) script-path = https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/dist/youtube.request.preview.js, requires-body = true, binary-body-mode = true, tag = Yêu cầu của YouTube
+
+http-response ^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch) script-path = https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/%C3%B4%CC%89%20ri%C3%AAng%20le%CC%89/youtube.js, requires-body = true, binary-body-mode = true, tag = Phản hồi của YouTube, argument=[{blockUpload},{blockImmersive},{captionLang},{lyricLang},{debug}]
+
+[MitM]
+hostname = youtu.be, *.googlevideo.com, youtubei.googleapis.com
