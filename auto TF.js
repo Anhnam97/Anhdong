@@ -3,23 +3,28 @@
     try {
       console.log("===== Bắt đầu vòng lặp mới =====");
       let ids = $persistentStore.read("APP_ID");
-
       if (!ids || ids.trim() === "") {
-        console.log("Không còn APP_ID nào để xử lý.");
-        $notification.post("TestFlight Script", "Không có APP_ID nào", "");
-      } else {
-        let idList = ids.split(",").map(x => x.trim()).filter(Boolean);
-        console.log("Danh sách APP_ID hiện tại:", idList);
-
-        await Promise.all(idList.map(ID => autoPost(ID))); // xử lý song song
+        console.log("Không có APP_ID nào trong danh sách.");
+        break;
       }
 
-      console.log("===== Hoàn tất vòng lặp. Đợi 15 giây... =====");
+      ids = ids.split(",").map(id => id.trim()).filter(Boolean);
+      console.log("Danh sách APP_ID hiện tại:", ids);
+
+      for (const ID of ids) {
+        console.log(`-- Kiểm tra app: ${ID} --`);
+        await autoPost(ID);
+      }
+
+      console.log("===== Hoàn tất vòng lặp. Đợi 15 giây... =====\n");
       await delay(15000);
-    } catch (err) {
-      console.error("Lỗi toàn cục:", err);
+    } catch (e) {
+      console.error("Lỗi trong vòng lặp chính:", e);
+      await delay(15000);
     }
   }
+
+  $done();
 })();
 
 function delay(ms) {
@@ -27,72 +32,84 @@ function delay(ms) {
 }
 
 function autoPost(ID) {
-  let Key = $persistentStore.read("key");
-  let testurl = `https://testflight.apple.com/v3/accounts/${Key}/ru/`;
-  let header = {
-    "X-Session-Id": $persistentStore.read("session_id"),
-    "X-Session-Digest": $persistentStore.read("session_digest"),
-    "X-Request-Id": $persistentStore.read("request_id"),
-    "User-Agent": $persistentStore.read("tf_ua"),
+  const key = $persistentStore.read("key");
+  const session_id = $persistentStore.read("session_id");
+  const session_digest = $persistentStore.read("session_digest");
+  const request_id = $persistentStore.read("request_id");
+  const tf_ua = $persistentStore.read("tf_ua");
+
+  const testurl = `https://testflight.apple.com/v3/accounts/${key}/ru/${ID}`;
+  const headers = {
+    "X-Session-Id": session_id,
+    "X-Session-Digest": session_digest,
+    "X-Request-Id": request_id,
+    "User-Agent": tf_ua,
   };
 
   return new Promise(resolve => {
-    console.log(`-- Kiểm tra app: ${ID} --`);
-    $httpClient.get({ url: testurl + ID, headers: header }, async (error, resp, data) => {
-      if (error || !data) {
-        console.error(`Lỗi GET ${ID}:`, error);
+    $httpClient.get({ url: testurl, headers: headers }, function (err, resp, data) {
+      if (err) {
+        console.error(`--> LỖI khi gửi GET ${ID}:`, err);
+        $notification.post("Lỗi GET", `APP: ${ID}`, err);
         return resolve();
       }
 
-      console.log(`Phản hồi GET từ ${ID}:`, data);
+      if (!data || data.trim() === "") {
+        console.error(`--> PHẢN HỒI RỖNG từ ${ID}`);
+        $notification.post(ID, "Phản hồi rỗng từ server", "");
+        return resolve();
+      }
+
+      if (data.includes("<html")) {
+        console.error(`--> PHẢN HỒI HTML lỗi từ ${ID}:\n`, data);
+        $notification.post(ID, "Phản hồi HTML lỗi", "Có thể sai session_id hoặc key");
+        return resolve();
+      }
 
       try {
-        const jsonData = JSON.parse(data);
-
-        if (!jsonData.data) {
-          const msg = jsonData.messages?.[0]?.message || "Không có dữ liệu hợp lệ.";
-          console.log(`${ID}: ${msg}`);
+        const json = JSON.parse(data);
+        if (!json.data) {
+          console.log(`--> ${ID}: Không có dữ liệu hợp lệ.`);
           return resolve();
         }
 
-        if (jsonData.data.status === "FULL") {
-          const appName = jsonData.data.app?.name || ID;
-          const message = jsonData.data.message || "TestFlight đầy";
-          console.log(`APP ĐẦY: ${appName} (${ID}) - ${message}`);
-          $notification.post(appName, "TestFlight đầy", message);
+        const status = json.data.status;
+        const appName = json.data.app?.name || ID;
+
+        if (status === "FULL") {
+          console.log(`--> ${appName} (${ID}): App đã đầy`);
+          $notification.post(appName, "TestFlight đầy", json.data.message || "App đã đầy");
           return resolve();
         }
 
-        // Nếu app chưa đầy → cố gắng tham gia
-        $httpClient.post({ url: testurl + ID + "/accept", headers: header }, async (error, resp, body) => {
-          if (error || !body) {
-            console.error(`Lỗi POST /accept ${ID}:`, error);
+        // Nếu chưa tham gia, gửi POST để tham gia
+        const acceptUrl = testurl + "/accept";
+        $httpClient.post({ url: acceptUrl, headers: headers }, function (err2, resp2, body2) {
+          if (err2) {
+            console.error(`--> LỖI POST ${ID}:`, err2);
+            $notification.post(appName, "Lỗi khi tham gia TestFlight", err2);
             return resolve();
           }
 
-          console.log(`Phản hồi POST /accept ${ID}:`, body);
-
           try {
-            const jsonBody = JSON.parse(body);
-            const appName = jsonBody.data?.name || `App ${ID}`;
+            const result = JSON.parse(body2);
+            console.log(`--> ${appName} (${ID}): Tham gia thành công`);
+            $notification.post(appName, "Tham gia TestFlight thành công", "");
 
-            console.log(`THAM GIA THÀNH CÔNG: ${appName} (${ID})`);
-            $notification.post(appName, "Đã tham gia TestFlight", "");
-
-            // Cập nhật lại APP_ID (xóa app đã join thành công)
-            let currentIds = $persistentStore.read("APP_ID").split(",").map(x => x.trim()).filter(x => x !== ID);
-            $persistentStore.write(currentIds.join(","), "APP_ID");
+            // Xoá ID khỏi danh sách
+            let idList = $persistentStore.read("APP_ID").split(",").map(i => i.trim());
+            idList = idList.filter(i => i !== ID);
+            $persistentStore.write(idList.join(","), "APP_ID");
+            return resolve();
           } catch (e) {
-            console.error("Lỗi phân tích JSON sau khi accept:", e);
-            console.log("Body không hợp lệ:", body);
+            console.error(`--> LỖI PARSE JSON khi tham gia ${ID}:`, e);
+            return resolve();
           }
-
-          return resolve();
         });
-
       } catch (e) {
-        console.error(`Lỗi phân tích JSON từ GET ${ID}:`, e);
+        console.error(`--> LỖI PARSE JSON khi xử lý GET ${ID}:`, e);
         console.log("Phản hồi thô:", data);
+        $notification.post(ID, "Lỗi phân tích JSON", "");
         return resolve();
       }
     });
