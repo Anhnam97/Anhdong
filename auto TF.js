@@ -10,7 +10,7 @@
         continue;
       }
 
-      let idList = ids.split(",").filter(x => x.trim() !== "");
+      let idList = ids.split(",").map(x => x.trim()).filter(x => x !== "");
 
       if (idList.length === 0) {
         console.log("Danh sách APP_ID rỗng");
@@ -95,12 +95,13 @@ function autoPost(ID) {
             console.log(`${joinedAppName} (${ID}) tham gia thành công`);
 
             // Xoá khỏi APP_ID sau khi thành công
-            let currentIds = $persistentStore.read("APP_ID").split(",");
+            let currentIds = $persistentStore.read("APP_ID").split(",").map(x => x.trim()).filter(x => x !== "");
             currentIds = currentIds.filter(x => x !== ID);
             $persistentStore.write(currentIds.join(","), "APP_ID");
 
           } catch (e) {
             console.error("Lỗi khi phân tích JSON tham gia:", e);
+            console.log("Dữ liệu lỗi body:", body || "Không có dữ liệu");
           }
 
           return resolve();
@@ -108,7 +109,8 @@ function autoPost(ID) {
 
       } catch (e) {
         console.error("Lỗi khi phân tích JSON phản hồi:", e);
-        console.log("Dữ liệu lỗi:", data);
+        console.log("ID gây lỗi:", ID);
+        console.log("Dữ liệu lỗi trả về:", data || "Không có dữ liệu");
         return resolve();
       }
     });
