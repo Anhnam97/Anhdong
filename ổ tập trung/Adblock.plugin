@@ -3,7 +3,7 @@
 #!author=ChatGPT x Anhdong
 
 [Script]
-http-request ^https?:\/\/.*\.(ads|adservice|doubleclick|googlesyndication|googletagservices|taboola|outbrain|applovin|adcolony|unityads|facebookads|tracking|track|click|metrics|beacons)\..* script-path=https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/adblock.js, tag=Ad Blocker
+http-request ^https?:\/\/.*\.(ads|adservice|doubleclick|googlesyndication|googletagservices|taboola|outbrain|applovin|adcolony|unityads|facebookads|tracking|track|click|metrics|beacons)\..* script-path=https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/adblock2.js, tag=Ad Blocker
 
 [MITM]
 hostname = 
