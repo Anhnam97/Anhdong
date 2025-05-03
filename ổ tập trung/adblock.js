@@ -1,18 +1,38 @@
-if (typeof $request !== 'undefined') {
-  const adKeywords = [
-    "ads", "adservice", "doubleclick", "googlesyndication",
-    "googletagservices", "taboola", "outbrain",
-    "applovin", "adcolony", "unityads", "facebookads",
-    "tracking", "track", "metrics", "beacons"
-  ];
+// ==UserScript==
+// @name         PhimMoi Popup Blocker
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Tự động đóng popup, chặn quảng cáo mở tab trên phimmoi.sale
+// @match        *://phimmoi.sale/*
+// @run-at       document-start
+// ==/UserScript==
 
-  if (adKeywords.some(keyword => $request.url.toLowerCase().includes(keyword))) {
-    console.log("Blocked Ad URL: " + $request.url);
-    $done({ status: 204, body: "" });
-  } else {
-    $done({});
-  }
-} else {
-  console.log("Loaded in wrong context");
-  $done({});
-}
+(function() {
+  'use strict';
+
+  // Vô hiệu hóa window.open (mở tab mới)
+  window.open = function() {
+    console.log('[Popup Blocked] window.open bị chặn');
+    return null;
+  };
+
+  // Tự động đóng các iframe hoặc popup thường gặp
+  const observer = new MutationObserver(() => {
+    document.querySelectorAll('iframe, .adsbox, .popup, [id^="ad"], [class*="ads"]').forEach(el => {
+      el.remove();
+      console.log('[Ad Removed]', el);
+    });
+  });
+
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Ngăn click mở quảng cáo
+  document.addEventListener('click', function(e) {
+    const target = e.target.closest('a');
+    if (target && target.href && /ad|qc|click|popup/i.test(target.href)) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('[Blocked click to ad link]:', target.href);
+    }
+  }, true);
+})();
