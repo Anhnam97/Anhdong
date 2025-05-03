@@ -1,9 +1,9 @@
 #!name=Universal AdBlock
-#!desc=Block common ads across apps and games
-#!author=chatgpt
+#!desc=Chặn quảng cáo trên TikTok, game, Facebook, v.v.
+#!author=ChatGPT
 
 [Script]
-http-request ^https?:\/\/.*\.(ads|adservice|doubleclick|googlesyndication|applovin|adcolony|unityads|facebookads)\..* script-path= https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/adblock.js, tag=Ad Blocker
+http-request ^https?:\/\/.*\.(ads|adservice|doubleclick|googlesyndication|applovin|adcolony|unityads|facebookads)\..* script-path=https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/adblock.js, tag=Ad Blocker
 
 [MITM]
 hostname = *.ads.*, *.adservice.*, *.doubleclick.net, *.googlesyndication.com, *.applovin.com, *.adcolony.com, *.unityads.unity3d.com, *.facebookads.com
