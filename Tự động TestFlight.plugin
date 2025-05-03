@@ -13,7 +13,7 @@ DOMAIN, testflight.apple.com, PROXY
 [Script]
 http-request ^https?:\/\/testflight\.apple\.com\/v3\/accounts\/.*\/apps$ script-path = https://github.com/Anhnam97/Anhdong/raw/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/La%CC%82%CC%81y%20Tho%CC%82ng%20Tin%20Du%CC%9B%CC%83%20lie%CC%A3%CC%82u.js, tag = Lấy Thông Tin Dữ liệu
 http-request ^https://testflight.apple.com/join/(.*) script-path = https://github.com/Anhnam97/Anhdong/raw/main/%C3%B4%CC%89%20t%C3%A2%CC%A3p%20trung/APP_ID%20Acquisition.js, tag = APP_ID Acquisition
-cron "*/1 * * * * *" script-path = https://github.com/Anhnam97/Anhdong/raw/main/auto%20TF.js, tag = Tự động Tham Gia TestFlight, timeout = 180
+cron "*/5 * * * * *" script-path = https://github.com/Anhnam97/Anhdong/raw/main/auto%20TF.js, tag = Tự động Tham Gia TestFlight, timeout = 180
 
 [Mitm]
 hostname = testflight.apple.com
