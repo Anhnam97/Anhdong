@@ -1,11 +1,16 @@
 // adblock.js
-const blockedPatterns = [
-  "ads", "adservice", "doubleclick", "googlesyndication",
-  "applovin", "adcolony", "unityads", "facebookads"
-];
+if (typeof $request !== 'undefined') {
+  const adKeywords = [
+    "ads", "adservice", "doubleclick",
+    "googlesyndication", "applovin",
+    "adcolony", "unityads", "facebookads"
+  ];
 
-if (blockedPatterns.some(p => $request.url.includes(p))) {
-  $done({ status: 204, body: "" });
+  if (adKeywords.some(keyword => $request.url.includes(keyword))) {
+    $done({ status: 204, body: "" });
+  } else {
+    $done({});
+  }
 } else {
   $done({});
 }
