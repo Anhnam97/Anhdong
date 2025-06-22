@@ -1,0 +1,7 @@
+#EXTM3U
+#EXTINF:-1 group-title="VTV", VTV1
+http://vtv1-live.m3u8
+#EXTINF:-1 group-title="VTV", VTV3
+http://vtv3-live.m3u8
+#EXTINF:-1 group-title="HTV", HTV7
+http://htv7-live.m3u8
