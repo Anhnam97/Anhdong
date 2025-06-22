@@ -1,3 +1,15 @@
+#EXTINF:-1 tvg-id="axnhd" group-title="🔁 CuongHeHe.In The Box" tvg-logo="https://xem.truyenhinh.click/Logo/axnhd/DoiTac-CuongHeHe",AXN
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
+https://xem.TruyenHinh.Click/CuongHeHe/axnhd/DoiTac.m3u8
+#EXTINF:-1 tvg-id="hbohd" group-title="🔁 CuongHeHe.In The Box" tvg-logo="https://xem.truyenhinh.click/Logo/hbohd/DoiTac-CuongHeHe",HBO
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
+https://xem.TruyenHinh.Click/CuongHeHe/hbohd/DoiTac.m3u8
+#EXTINF:-1 tvg-id="warnertvhd" group-title="🔁 CuongHeHe.In The Box" tvg-logo="https://xem.truyenhinh.click/Logo/warnertvhd/DoiTac-CuongHeHe",Warner TV
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
+https://xem.TruyenHinh.Click/CuongHeHe/warnertvhd/DoiTac.m3u8
+#EXTINF:-1 tvg-id="discoveryhd" group-title="🔁 CuongHeHe.In The Box" tvg-logo="https://xem.truyenhinh.click/Logo/discoveryhd/DoiTac-CuongHeHe",Discovery Channel
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
+https://xem.TruyenHinh.Click/CuongHeHe/discoveryhd/DoiTac.m3u8
 #EXTINF:-1 tvg-id="tv360.live" group-title="Sự kiện trực tiếp" group-logo="https://xem.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/tv360.live/KenhCoBan",TV360 Live
 https://xem.TruyenHinh.Click/CoBan/tv360.live/TuyetDoiKhongKinhDoanh.m3u8
 #EXTINF:-1 tvg-id="tv360.Mekong" group-title="Sự kiện trực tiếp" group-logo="https://xem.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/tv360.Mekong/KenhCoBan",Mekong
