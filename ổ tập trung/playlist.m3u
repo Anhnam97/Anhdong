@@ -48,3 +48,25 @@ https://xem.TruyenHinh.Click/CoBan/boxmovie1hd/TuyetDoiKhongKinhDoanh.m3u8
 https://xem.TruyenHinh.Click/CoBan/hollywoodclassichd/TuyetDoiKhongKinhDoanh.m3u8
 #EXTINF:-1 tvg-id="inthebox" group-title="In The Box" group-logo="https://xem.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/inthebox/KenhCoBan",In The Box
 https://xem.TruyenHinh.Click/CoBan/inthebox/TuyetDoiKhongKinhDoanh.m3u8
+#EXTINF:-1 tvg-id="kcinehd" group-title="K+ Copy" group-logo="https://tv.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/kcinehd/KenhBoSung",K+ Cine
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36
+#EXTVLCOPT: http-referrer=https://truyenhinh.click/
+https://xem.TruyenHinh.Click/BoSung/kcinehd/TruyenHinh.Click
+#EXTINF:-1 tvg-id="kaction" group-title="K+ Copy" group-logo="https://tv.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/kaction/KenhBoSung",K+ Action
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36
+#EXTVLCOPT: http-referrer=https://truyenhinh.click/
+https://xem.TruyenHinh.Click/BoSung/kaction/TruyenHinh.Click
+#EXTINF:-1 tvg-id="ksport1hd" group-title="K+ Copy" group-logo="https://tv.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/ksport1hd/KenhBoSung",K+ Sport 1
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36
+#EXTVLCOPT: http-referrer=https://truyenhinh.click/
+https://xem.TruyenHinh.Click/BoSung/ksport1hd/TruyenHinh.Click
+#EXTINF:-1 tvg-id="ksport2hd" group-title="K+ Copy" group-logo="https://tv.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/ksport2hd/KenhBoSung",K+ Sport 2
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36
+#EXTVLCOPT: http-referrer=https://truyenhinh.click/
+https://xem.TruyenHinh.Click/BoSung/ksport2hd/TruyenHinh.Click
+#EXTINF:-1 tvg-id="kkidshd" group-title="K+ Copy" group-logo="https://tv.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/kkidshd/KenhBoSung",K+ Kids
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36
+#EXTVLCOPT: http-referrer=https://truyenhinh.click/
+https://xem.TruyenHinh.Click/BoSung/kkidshd/TruyenHinh.Click
+<br />
+<b>Warning</b>:  Undefined variable $content in <b>/www/wwwroot/xem.truyenhinh.click/Radio/index.php</b> on line <b>9</b><br />
