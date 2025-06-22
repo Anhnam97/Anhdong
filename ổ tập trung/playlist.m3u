@@ -67,6 +67,7 @@ https://xem.TruyenHinh.Click/BoSung/ksport2hd/TruyenHinh.Click
 #EXTINF:-1 tvg-id="kkidshd" group-title="K+ Copy" group-logo="https://tv.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/kkidshd/KenhBoSung",K+ Kids
 #EXTVLCOPT:http-user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36
 #EXTVLCOPT: http-referrer=https://truyenhinh.click/
+#EXTM3U url-tvg="http://lichphatsong.xyz/schedule/epg.xml.gz"
 #EXTINF:-1 tvg-id="axnhd" group-title="🔁 CuongHeHe.In The Box" tvg-logo="https://xem.truyenhinh.click/Logo/axnhd/DoiTac-CuongHeHe",AXN
 #EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
 https://xem.TruyenHinh.Click/CuongHeHe/axnhd/DoiTac.m3u8
