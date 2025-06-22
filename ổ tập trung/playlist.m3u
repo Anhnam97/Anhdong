@@ -48,6 +48,7 @@ https://xem.TruyenHinh.Click/CoBan/boxmovie1hd/TuyetDoiKhongKinhDoanh.m3u8
 https://xem.TruyenHinh.Click/CoBan/hollywoodclassichd/TuyetDoiKhongKinhDoanh.m3u8
 #EXTINF:-1 tvg-id="inthebox" group-title="In The Box" group-logo="https://xem.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/inthebox/KenhCoBan",In The Box
 https://xem.TruyenHinh.Click/CoBan/inthebox/TuyetDoiKhongKinhDoanh.m3u8
+https://xem.TruyenHinh.Click/BoSung/hanoi2/TruyenHinh.Click
 #EXTINF:-1 tvg-id="kcinehd" group-title="K+ Copy" group-logo="https://tv.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/kcinehd/KenhBoSung",K+ Cine
 #EXTVLCOPT:http-user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36
 #EXTVLCOPT: http-referrer=https://truyenhinh.click/
@@ -67,16 +68,6 @@ https://xem.TruyenHinh.Click/BoSung/ksport2hd/TruyenHinh.Click
 #EXTINF:-1 tvg-id="kkidshd" group-title="K+ Copy" group-logo="https://tv.truyenhinh.click/HoiQuanLogo/Images/HinhNhom.png" tvg-logo="https://xem.truyenhinh.click/Logo/kkidshd/KenhBoSung",K+ Kids
 #EXTVLCOPT:http-user-agent=Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36
 #EXTVLCOPT: http-referrer=https://truyenhinh.click/
-#EXTM3U url-tvg="http://lichphatsong.xyz/schedule/epg.xml.gz"
-#EXTINF:-1 tvg-id="axnhd" group-title="🔁 CuongHeHe.In The Box" tvg-logo="https://xem.truyenhinh.click/Logo/axnhd/DoiTac-CuongHeHe",AXN
-#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
-https://xem.TruyenHinh.Click/CuongHeHe/axnhd/DoiTac.m3u8
-#EXTINF:-1 tvg-id="hbohd" group-title="🔁 CuongHeHe.In The Box" tvg-logo="https://xem.truyenhinh.click/Logo/hbohd/DoiTac-CuongHeHe",HBO
-#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
-https://xem.TruyenHinh.Click/CuongHeHe/hbohd/DoiTac.m3u8
-#EXTINF:-1 tvg-id="warnertvhd" group-title="🔁 CuongHeHe.In The Box" tvg-logo="https://xem.truyenhinh.click/Logo/warnertvhd/DoiTac-CuongHeHe",Warner TV
-#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
-https://xem.TruyenHinh.Click/CuongHeHe/warnertvhd/DoiTac.m3u8
-#EXTINF:-1 tvg-id="discoveryhd" group-title="🔁 CuongHeHe.In The Box" tvg-logo="https://xem.truyenhinh.click/Logo/discoveryhd/DoiTac-CuongHeHe",Discovery Channel
-#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
-https://xem.TruyenHinh.Click/CuongHeHe/discoveryhd/DoiTac.m3u8
+https://xem.TruyenHinh.Click/BoSung/kkidshd/TruyenHinh.Click
+<br />
+<b>Warning</b>:  Undefined variable $content in <b>/www/wwwroot/xem.truyenhinh.click/Radio/index.php</b> on line <b>9</b><br />
