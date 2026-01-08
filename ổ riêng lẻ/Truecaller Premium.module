@@ -5,4 +5,4 @@
 hostname = %APPEND% premium*.truecaller.com
 
 [Script]
-Truecaller = type=http-response,pattern=^https://premium-(.+)\.truecaller\.com/v\d/(subscriptions|products/apple),requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/Little34306/little34306.github.io/refs/heads/main/obf_tc.js
+Truecaller = type=http-response,pattern=^https://premium-(.+)\.truecaller\.com/v\d/(subscriptions|products/apple),requires-body=1,max-size=0,script-path=https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/%C3%B4%CC%89%20ri%C3%AAng%20le%CC%89/obf_tc.js
