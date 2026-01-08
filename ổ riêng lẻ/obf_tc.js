@@ -51,14 +51,14 @@ switch ($request.url) {
           productType: "GoldYearly",
           isFreeTrial: false
         },
-        tier: { id: "gold", feature: features }
+        tier: { id: "Premium", feature: features }
       }
     break;
   case findUrl(/products\/apple/):
       obj = {
   "tier": [
     {
-      "id": "gold",
+      "id": "Premium",
       "product": [
         {
           "productType": "GoldYearly",
