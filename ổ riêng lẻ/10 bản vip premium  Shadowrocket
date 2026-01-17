@@ -1,6 +1,6 @@
 # Shadowrocket: 2026-01-17 20:48:04
 [General]
-update-url = https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/%C3%B4%CC%89%20ri%C3%AAng%20le%CC%89/10%20ba%CC%89n%20vip%20premium%20%20Shadowrocket.conf
+update-url = https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/%C3%B4%CC%89%20ri%C3%AAng%20le%CC%89/10%20ba%CC%89n%20vip%20premium%20%20Shadowrocket
 
 [Rule]
 DOMAIN-KEYWORD,facebook.com/ads,REJECT,extended-matching
