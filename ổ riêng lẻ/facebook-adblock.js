@@ -1,3 +1,13 @@
+// Thêm vào đầu script
+const url = $request?.url || '';
+if (url.includes('/graphql') || 
+    url.includes('/api/') || 
+    url.includes('/home.php') ||
+    url.includes('/feed')) {
+    console.log('Facebook Ad Blocker: Skipping important API request');
+    $done({}); // Không xử lý
+    return;
+}
 const url = $request.url;
 let body = $response.body;
 
