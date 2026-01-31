@@ -1,8 +1,0 @@
-[Script]
-name = Facebook Ad Blocker
-type = http-response
-pattern = ^https?://(www|m|graph)\.facebook\.com/.+
-script-path = https://github.com/Anhnam97/Anhdong/raw/refs/heads/main/%C3%B4%CC%89%20ri%C3%AAng%20le%CC%89/facebook-adblock.js
-
-[MITM]
-hostname = www.facebook.com, m.facebook.com, *.ads.facebook.com, *.an.facebook.com, *.facebookads.com
