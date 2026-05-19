@@ -1,60 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 
-<key>PayloadContent</key>
-<array>
-<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>DNSSettings</key>
+            <dict>
+                <key>DNSProtocol</key>
+                <string>HTTPS</string>
 
-<key>DNSSettings</key>
-<dict>
-<key>DNSProtocol</key>
-<string>TLS</string>
+                <key>ServerURL</key>
+                <string>https://192.168.1.243/dns-query</string>
+            </dict>
 
-<key>ServerAddresses</key>
-<array>
-<string>192.168.1.243</string>
-</array>
+            <key>PayloadType</key>
+            <string>com.apple.dnsSettings.managed</string>
 
-<key>ServerName</key>
-<string>PiDNS</string>
+            <key>PayloadIdentifier</key>
+            <string>com.adguard.dns.local</string>
 
-</dict>
+            <key>PayloadUUID</key>
+            <string>7A1B2C3D-1111-2222-3333-ABCDEF123456</string>
 
-<key>PayloadType</key>
-<string>com.apple.dnsSettings.managed</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
 
-<key>PayloadIdentifier</key>
-<string>com.pidns.profile</string>
+            <key>PayloadDisplayName</key>
+            <string>AdGuard DNS Local</string>
+        </dict>
+    </array>
 
-<key>PayloadUUID</key>
-<string>11111111-2222-3333-4444-555555555555</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
 
-<key>PayloadVersion</key>
-<integer>1</integer>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
 
-</dict>
-</array>
+    <key>PayloadIdentifier</key>
+    <string>com.yourdns.profile.local</string>
 
-<key>PayloadDisplayName</key>
-<string>Pi DNS</string>
+    <key>PayloadUUID</key>
+    <string>99999999-AAAA-BBBB-CCCC-1234567890AB</string>
 
-<key>PayloadIdentifier</key>
-<string>com.pidns.main</string>
+    <key>PayloadDisplayName</key>
+    <string>AdGuard Home DNS</string>
 
-<key>PayloadRemovalDisallowed</key>
-<false/>
-
-<key>PayloadType</key>
-<string>Configuration</string>
-
-<key>PayloadUUID</key>
-<string>AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE</string>
-
-<key>PayloadVersion</key>
-<integer>1</integer>
+    <key>PayloadDescription</key>
+    <string>DNS over HTTPS profile for local AdGuard Home</string>
 
 </dict>
 </plist>
