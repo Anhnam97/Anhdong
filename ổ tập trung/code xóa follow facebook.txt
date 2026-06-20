@@ -6,12 +6,10 @@ COOKIE_FILE = "fb_cookie.txt"
 
 def doc_cookie():
     if os.path.exists(COOKIE_FILE):
-        with open(COOKIE_FILE, "r") as f:
-            return f.read().strip()
+        with open(COOKIE_FILE, "r") as f: return f.read().strip()
     return ""
 
 def doi_dinh_dang_cookie(cookie_str):
-    # Định dạng lại chuỗi cookie thô thành cấu trúc mảng để trình duyệt ảo hiểu được
     cookies = []
     for item in cookie_str.split(';'):
         if '=' in item:
@@ -25,125 +23,111 @@ def doi_dinh_dang_cookie(cookie_str):
     return cookies
 
 def main():
-    print("[*] KHOI DONG TRINH DUYET AO PHIEN BAN WEB DESKTOP")
-    
+    print("[*] KHOI DONG BOT QUET GOI Y THEO CO CHE DO QUET TOAN DIEN")
     cookie_str = doc_cookie()
     if not cookie_str:
-        print("[-] Khong tim thay file fb_cookie.txt. Vui long tao file chua cookie!")
+        print("[-] Khong tim thay file fb_cookie.txt!")
         return
 
     with sync_playwright() as p:
-        # Chạy trình duyệt ẩn ngầm (headless=True) để tiết kiệm tài nguyên cho Orange Pi
         browser = p.chromium.launch(headless=True)
+        # Giả lập màn hình lớn để Facebook hiển thị cấu trúc danh sách đầy đủ nhất
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            viewport={"width": 1280, "height": 800}
+            viewport={"width": 1920, "height": 1080}
         )
-        
-        # Nạp trực tiếp Cookie của bạn vào phiên duyệt web
         context.add_cookies(doi_dinh_dang_cookie(cookie_str))
         page = context.new_page()
         
-        # Đọc ID chủ nick từ chuỗi cookie để loại trừ chính mình
+        # Lấy UID chủ nick để loại trừ
         my_uid = ""
         uid_match = re.search(r'c_user=(\d+)', cookie_str)
         if uid_match:
             my_uid = uid_match.group(1)
-            print(f"[+] Da nhan dien ID chu nick: {my_uid}")
 
         da_xu_ly = []
 
         while True:
             print("\n[==================================================]")
-            print("[*] TIEN TRINH: Tien hanh quet danh sach GOI Y tren Desktop...")
+            print("[*] TIEN TRINH: Mo link va ep Facebook load danh sach...")
             print("[==================================================]")
             
             try:
-                # Truy cập thẳng vào link danh sách gợi ý giống như màn hình Cốc Cốc của bạn
                 page.goto("https://www.facebook.com/friends/suggestions", timeout=60000)
-                page.wait_for_timeout(5000) # Chờ 5 giây để tải danh sách người dùng
+                page.wait_for_timeout(6000) 
             except Exception as e:
-                print(f"[-] Loi truy cap trang: {e}. Dang tai lai sau 30 giay...")
+                print(f"[-] Loi tai trang: {e}. Quay lai sau 30 giay...")
                 time.sleep(30)
                 continue
 
-            # Cuộn trang nhẹ để kích hoạt Facebook load thêm người mới
-            page.evaluate("window.scrollTo(0, document.body.scrollHeight / 3);")
-            page.wait_for_timeout(2000)
+            # ÉP LOAD DANH SÁCH: Cuộn chuột xuống 3 lần để ép Facebook tải danh sách gợi ý ra
+            for scroll in range(3):
+                page.evaluate("window.scrollBy(0, 800);")
+                page.wait_for_timeout(2000)
 
-            # Tìm kiếm các khu vực chứa nút kết bạn dựa trên cấu trúc giao diện Máy tính
-            cards = page.query_selector_all('div[role="listitem"]') or page.query_selector_all('div[data-visualcompletion="ignore-dynamic"]')
-            
-            valid_targets = []
-            for card in cards:
-                # Tìm kiếm nút "Thêm bạn bè" trong từng ô người dùng
-                btn = card.query_selector('div[aria-label="Thêm bạn bè"]') or card.query_selector('text="Thêm bạn bè"')
-                if btn:
-                    # Bóc tách ID người dùng từ các đường link cá nhân xung quanh nút đó
-                    uid = "Unknown"
-                    link_elem = card.query_selector('a[href*="/user/"], a[href*="profile.php"], a[href*="/friends/"]')
-                    if link_elem:
-                        href = link_elem.get_attribute("href")
-                        match = re.search(r'profile\.php\?id=(\d+)', href) or re.search(r'/user/(\d+)/', href) or re.search(r'facebook\.com/([^/?]+)', href)
-                        if match:
-                            uid = match.group(1)
-                    
-                    if uid != my_uid and uid not in da_xu_ly:
-                        valid_targets.append({"button": btn, "uid": uid})
+            # BỘ LỌC ĐA NĂNG: Quét tất cả các nút có khả năng là nút kết bạn trên mọi giao diện Facebook
+            nut_goi_y = page.locator('//div[@aria-label="Thêm bạn bè"] | //span[text()="Thêm bạn bè"] | //div[text()="Thêm bạn bè"]').all()
 
-            if not valid_targets:
-                print("[-] Khong tim thay muc goi y nao moi tren giao dien. Chờ load lại sau 15 giây...")
-                time.sleep(15)
+            if not nut_goi_y:
+                print("[-] Van chua bat duoc cau truc nut. Dang quet thu nghiem bang link m.facebook...")
+                # Nếu giao diện PC chặn, ép trình duyệt ảo nhảy sang giao diện mobile để vét ID
+                try:
+                    page.goto("https://m.facebook.com/friends/?target_pivot_link=suggestions", timeout=60000)
+                    page.wait_for_timeout(5000)
+                    nut_goi_y = page.locator('//a[contains(@href, "/a/friendrequest/")] | //button[text()="Thêm bạn bè"] | //div[@aria-label="Thêm bạn bè"]').all()
+                except:
+                    pass
+
+            if not nut_goi_y:
+                print("[-] He thong Facebook dang nghen du lieu goi y. Cho load lai sau 30 giay...")
+                time.sleep(30)
                 continue
 
-            print(f"[+] Quet thanh cong! Tim thay {len(valid_targets)} tai khoan goi y tren man hinh.")
+            print(f"[+] Quet quoc te dung cho! Phat hien {len(nut_goi_y)} muc tuong thich tren man hinh.")
             
             count_success = 0
             bi_chan = False
             
-            for target in valid_targets:
+            for index, btn in enumerate(nut_goi_y):
                 if count_success >= 10:
                     break
                 
-                uid_chay = target["uid"]
-                da_xu_ly.append(uid_chay)
+                # Tạo ID tạm thời dựa trên thứ tự để hiển thị realtime cho bạn theo dõi
+                id_hien_thi = f"Goi_Y_Thu_{index + 1}"
                 
-                # HIỂN THỊ TIẾN ĐỘ THỜI GIAN THỰC VÀ ID THEO YÊU CẦU CỦA BẠN
-                print(f"[*] [Tien do: {count_success}/10] -> Dang click ket ban voi ID: {uid_chay}")
+                print(f"[*] [Tien do: {count_success}/10] -> Dang tien hanh bam nut ket ban: {id_hien_thi}")
                 
                 try:
-                    # Cuộn màn hình đến nút tương ứng và thực hiện Click vật lý
-                    target["button"].scroll_into_view_if_needed()
-                    page.wait_for_timeout(1000)
-                    target["button"].click()
-                    page.wait_for_timeout(3000) # Chờ hệ thống ghi nhận lệnh click
-                    
-                    # KIỂM TRA XEM CÓ BỊ DIALOG PHÁT HIỆN HẠN CHẾ HAY KHÔNG
-                    dialog = page.query_selector('div[role="dialog"]')
-                    if dialog and any(kw in dialog.inner_text().lower() for kw in ["chặn", "hạn chế", "block", "spam", "tạm thời"]):
-                        print("\n[❌] CANH BAO: PHAT HIEN POPUP CHAN TINH NANG CỦA FACEBOOK!")
-                        bi_chan = True
-                        break
-                    
-                    count_success += 1
-                    print(f"   => [OK] Da bam Thêm bạn bè thanh cong voi ID: {uid_chay}")
-                    
-                    # Nghỉ giãn cách an toàn ngẫu nhiên phòng chống thuật toán quét của Facebook
-                    time.sleep(random.randint(20, 45))
-                    
+                    if btn.is_visible():
+                        btn.scroll_into_view_if_needed()
+                        page.wait_for_timeout(1500)
+                        btn.click()
+                        page.wait_for_timeout(4000) # Chờ 4 giây xem Facebook có hiện popup chặn không
+                        
+                        # Kiểm tra xem có bị dính popup "Bạn tạm thời bị chặn..." hay không
+                        dialog = page.query_selector('div[role="dialog"]')
+                        if dialog and any(kw in dialog.inner_text().lower() for kw in ["chặn", "hạn chế", "block", "tạm thời"]):
+                            print("\n[❌] PHAT HIEN POPUP CHAN TINH NANG CỦA FACEBOOK!")
+                            bi_chan = True
+                            break
+                        
+                        count_success += 1
+                        print(f"   => [OK] Da bam gui loi moi ket ban thanh cong!")
+                        time.sleep(random.randint(25, 50)) # Giãn cách an toàn giữ nick
+                    else:
+                        print(f"   => [Bo qua] Muc nay dang bi an tren man hinh.")
                 except Exception as ex:
-                    print(f"   => [Bo qua/Loi] Khong the tuong tac voi ID {uid_chay}: {ex}")
+                    print(f"   => [Loi click]: {ex}")
 
             if bi_chan:
-                print("[*] Ngat chu ky chay ngay lap tuc! Bat che do NGU DONG CACH LY 24 TIENG...")
+                print("[*] Kich hoat che do CACH LY NGU DONG 24 TIENG...")
                 time.sleep(24 * 3600)
                 continue
 
-            # ĐỦ 10 NGƯỜI THÀNH CÔNG MỚI KÍCH HOẠT NGHỈ 10 PHÚT
-            print(f"\n[✔] HOAN THANH LUOT: Da gui ket ban thanh cong {count_success}/10 nguoi.")
-            print("[*] He thong tam dung, bat dau dong ho dem nguoc nghi 10 PHUT...")
+            print(f"\n[✔] DA HOAN THANH: Gui thanh cong {count_success}/10 nguoi.")
+            print("[*] Bat dau chu ky nghi dung 10 PHUT...")
             time.sleep(600)
-            print("[*] Het 10 phut nghi xả hơi. Chuyen tiep sang vong lap chu ky tiep theo...\n")
+            print("[*] Het thoi gian nghi. Tu dong tai lai vong lap moi...\n")
 
         browser.close()
 
