@@ -16,27 +16,32 @@ def lay_uid_chinh_chu(cookie):
 def kiem_tra_cookie_live(cookie):
     if not cookie: return False
     try:
-        res = requests.get("https://m.facebook.com/friends/?target_pivot_link=suggestions", headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Cookie': cookie}, timeout=10)
+        res = requests.get("https://www.facebook.com/friends/suggestions", headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Cookie': cookie}, timeout=10)
         if "logout" in res.text.lower() or "save" in res.text.lower() or res.status_code == 200: return True
     except: pass
     return False
 
 def quet_danh_sach_goi_y(cookie, my_uid):
-    # Sử dụng chính xác đường dẫn bạn gửi
-    url = "https://m.facebook.com/friends/?target_pivot_link=suggestions"
+    # Sử dụng link quét cấu trúc Web Desktop để bóc tách API ngầm của Facebook
+    url = "https://www.facebook.com/friends/suggestions"
     uids = []
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Cookie': cookie
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Cookie': cookie,
+        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5'
     }
     try:
-        res = requests.get(url, headers=headers, timeout=12)
+        res = requests.get(url, headers=headers, timeout=15)
         
-        # Quét tất cả các định dạng ID người dùng trong cấu trúc HTML/JSON của trang gợi ý này
-        matches = re.findall(r'\"id\":\"(\d+)\"', res.text) or re.findall(r'uid=(\d+)', res.text) or re.findall(r'id=(\d+)', res.text)
-        
+        # Bộ lọc Regex quét trực tiếp các chuỗi ID thực thể người dùng từ dữ liệu Graph của bản PC
+        matches = re.findall(r'\" thoseYouMayKnow \":\{.*?\"id\":\"(\d+)\"', res.text) or \
+                  re.findall(r'\"user_id\":\"(\d+)\"', res.text) or \
+                  re.findall(r'\"id\":\"(\d+)\",\"name\"', res.text) or \
+                  re.findall(r'\"friend_id\":\"(\d+)\"', res.text) or \
+                  re.findall(r'\"id\":\"(\d+)\"', res.text)
+                  
         for uid in matches:
-            if uid != my_uid and uid not in uids and len(uid) >= 10:
+            if uid != my_uid and uid not in uids and len(uid) >= 13:
                 uids.append(uid)
     except Exception as e:
         print(f"[-] Loi ket noi he thong khi quet: {e}")
@@ -49,13 +54,15 @@ def gui_loi_moi_ket_ban(uid, cookie):
         'Referer': f'https://m.facebook.com/{uid}'
     }
     try:
+        # Chuyển hướng nhanh sang phiên bản đá gói tin m.facebook để gửi lệnh nhằm tránh checkpoint thiết bị
         check_res = requests.get(f"https://m.facebook.com/{uid}", headers=headers, timeout=10)
         if "add_friend" not in check_res.text and "a/friendrequest" not in check_res.text and "Thêm bạn bè" not in check_res.text:
             return "skip"
             
         res = requests.post(f"https://m.facebook.com/a/friendrequest/?to_friend={uid}", headers=headers, timeout=10)
         
-        detect_block_keywords = ["checkpoint", "xc_error", "chặn", "bị hạn chế", "hạn chế tính năng", "block", "spam"]
+        # CHỨC NĂNG QUÉT KHI BỊ FACEBOOK GIỚI HẠN
+        detect_block_keywords = ["checkpoint", "xc_error", "chặn", "bị hạn chế", "hạn chế tính năng", "block", "spam", "tạm thời"]
         if any(keyword in res.text.lower() for keyword in detect_block_keywords) or "checkpoint" in res.url:
             return "blocked"
             
@@ -65,7 +72,7 @@ def gui_loi_moi_ket_ban(uid, cookie):
     return "fail"
 
 def main():
-    print("[*] KHOI DONG TIEN TRINH QUET GOI Y CHUAN LINK LINK MOI")
+    print("[*] KHOI DONG TIEN TRINH QUET GRAPH API DESKTOP TOI UU 2026")
     
     while True:
         cookie = doc_cookie()
@@ -90,40 +97,50 @@ def main():
             danh_sach_loc = [id for id in danh_sach_uid if id not in da_xu_ly]
 
             if not danh_sach_loc:
-                print("[-] Chua lay them duoc ID goi y moi. Cho tool lay lai sau 15 giay...")
-                time.sleep(15)
+                print("[-] Khong cào thay ID goi y moi tren API. Cho lam sach va load lai sau 30 giay...")
+                time.sleep(30)
+                # Nếu cào bị rỗng, reset nhẹ lại danh sách đã xử lý để có thể lấy lại dữ liệu mới từ Facebook
+                da_xu_ly.clear()
                 continue
 
-            uid_chay = danh_sach_loc[0]
-            da_xu_ly.append(uid_chay)
+            print(f"[+] Quet duoc hang loat {len(danh_sach_loc)} ID goi y tu Facebook!")
+            
+            # Lấy lần lượt từng ID trong hàng đợi ra xử lý
+            for uid_chay in danh_sach_loc:
+                if count_success >= 10:
+                    break
+                    
+                da_xu_ly.append(uid_chay)
+                print(f"[*] [Tien do hien tai: {count_success}/10] -> Dang gui ket ban den ID: {uid_chay}")
 
-            print(f"[*] [Dang gui: {count_success}/10] -> Dang tien hanh ket ban voi ID: {uid_chay}")
+                ket_qua = gui_loi_moi_ket_ban(uid_chay, cookie)
 
-            ket_qua = gui_loi_moi_ket_ban(uid_chay, cookie)
+                if ket_qua == "blocked":
+                    bi_chan = True
+                    break
 
-            if ket_qua == "blocked":
-                bi_chan = True
+                if ket_qua == "success":
+                    count_success += 1
+                    print(f"   => [OK] Da gui thanh cong den ID: {uid_chay}")
+                    time.sleep(random.randint(20, 45)) # Nghỉ giãn cách an toàn tránh quét thuật toán spam
+                elif ket_qua == "skip":
+                    print(f"   => [Bo qua] ID {uid_chay} da gui loi moi hoac nut ket ban bi khoa.")
+                else:
+                    print(f"   => [That bai] Khong gui duoc cho ID {uid_chay}.")
+
+            if bi_chan:
                 break
 
-            if ket_qua == "success":
-                count_success += 1
-                print(f"   => [OK] Da gui thanh cong den ID: {uid_chay}")
-                time.sleep(random.randint(15, 30))
-            elif ket_qua == "skip":
-                print(f"   => [Bo qua] ID {uid_chay} da gui hoac khoa nut.")
-            else:
-                print(f"   => [That bai] Khong gui duoc cho ID {uid_chay}.")
-
         if bi_chan:
-            print("\n[❌] PHAT HIEN FACEBOOK GIOI HAN TINH NANG NICK CUA BAN!")
-            print("[*] Dung chu ky chay, kich hoat che do CACH LY NGU DONG 24 TIENG...")
-            time.sleep(24 * 3600)
+            print("\n[❌] CANH BAO: PHAT HIEN FACEBOOK GIOI HAN TINH NANG KET BAN!")
+            print("[*] Ngat vong lap lap tuc! Kich hoat che do CACH LY NGU DONG 24 TIENG...")
+            time.sleep(24 * 3600) # Nghỉ đúng 24 tiếng sau tự động lặp lại các bước
             continue
 
-        print(f"\n[✔] DA HOAN THANH gui ket ban cho {count_success}/10 nguoi.")
-        print("[*] Bat dau chu ky nghi dung 10 PHUT truoc khi thuc hien luot moi...")
+        print(f"\n[✔] HOAN THANH CHU KY: Da add thanh cong {count_success}/10 nguoi.")
+        print("[*] Theo thiet lap: Bat dau chu ky nghi xả hoi dung 10 PHUT...")
         time.sleep(600)
-        print("[*] Ket thuc thoi gian nghi. Tu dong quay lai quet vong moi...\n")
+        print("[*] Het 10 phut nghi. Tu dong tai lai vong lap moi de tiep tuc...\n")
 
 if __name__ == "__main__":
     main()
