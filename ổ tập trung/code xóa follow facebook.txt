@@ -1,50 +1,7 @@
 # -*- coding: utf-8 -*-
-import os, re, time, random, pyotp, requests
-from playwright.sync_api import sync_playwright
+import os, re, time, random, requests
 
-FB_EMAIL = "0977731550"
-FB_PASSWORD = "Anhdong97"
-FB_2FA_SECRET = "P6BTJJBWXBH4G4JAQGX5FWOUBBL4PY4Z"
-COOKIE_FILE = "/home/pi/fb_cookie.txt"
-
-def lay_ma_2fa(secret):
-    try:
-        return pyotp.TOTP(secret.replace(" ", "")).now()
-    except:
-        return None
-
-def tu_dong_lay_cookie():
-    print("[*] Dang mo trinh duyet ao de login...")
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-        page = context.new_page()
-        try:
-            page.goto("https://www.facebook.com/", timeout=60000)
-            page.fill("input[id='email']", FB_EMAIL)
-            page.fill("input[id='pass']", FB_PASSWORD)
-            page.click("button[name='login']")
-            page.wait_for_timeout(6000)
-            if "checkpoint" in page.url or page.locator("input[type='text']").is_visible():
-                print("[*] Dang tu dong giai ma 2FA...")
-                ma_2fa = lay_ma_2fa(FB_2FA_SECRET)
-                if ma_2fa:
-                    print(f"[+] Dien OTP: {ma_2fa}")
-                    try: page.fill("input[type='text']", ma_2fa)
-                    except: page.fill("input[id='approvals_code']", ma_2fa)
-                    try: page.click("button[id='checkpointSubmitButton']")
-                    except: page.click("button")
-                    page.wait_for_timeout(6000)
-            if "facebook.com" in page.url:
-                cookies = context.cookies()
-                cookie_str = "; ".join([f"{c['name']}={c['value']}" for c in cookies])
-                with open(COOKIE_FILE, "w", encoding="utf-8") as f: f.write(cookie_str)
-                print("[>>>>] Link thanh cong! Da luu Cookie.")
-                browser.close()
-                return cookie_str
-        except Exception as e: print(f"[-] Loi: {e}")
-        browser.close()
-        return ""
+COOKIE_FILE = "fb_cookie.txt"
 
 def doc_cookie():
     if os.path.exists(COOKIE_FILE):
@@ -59,15 +16,16 @@ def kiem_tra_cookie_live(cookie):
     except: pass
     return False
 
-def tu_dong_quet_uid_nu_thai_binh(cookie):
-    print("[*] Dang tim kiem 'Nu Thai Binh'...")
-    url = "https://mbasic.facebook.com/search/people/?q=n%E1%BB%AF%20th%C3%A1i%20b%C3%ACnh"
+def quet_danh_sach_goi_y(cookie):
+    print("[*] Dang quet danh sach GOI Y KET BAN...")
+    url = "https://mbasic.facebook.com/friends/center/suggestions/"
     uids = []
     try:
         res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0', 'Cookie': cookie}, timeout=10)
-        for uid in re.findall(r'id=(\d+)', res.text):
+        for uid in re.findall(r'uid=(\d+)', res.text):
             if uid not in uids and len(uid) > 10: uids.append(uid)
-    except: pass
+    except Exception as e:
+        print(f"[-] Loi khi quet danh sach goi y: {e}")
     return uids
 
 def gui_loi_moi_ket_ban(uid, cookie):
@@ -75,32 +33,72 @@ def gui_loi_moi_ket_ban(uid, cookie):
     try:
         check_res = requests.get(f"https://mbasic.facebook.com/{uid}", headers=headers, timeout=10)
         if "add_friend" not in check_res.text and "a/friendrequest" not in check_res.text:
-            return False
+            print(f"[-] UID {uid} khong co nut ket ban hoac da add. Bo qua!")
+            return "skip"
+            
         res = requests.post(f"https://mbasic.facebook.com/a/friendrequest/?to_friend={uid}", headers=headers, timeout=10)
+        
+        # CHỨC NĂNG QUÉT KHI BỊ FACEBOOK GIỚI HẠN
+        # Facebook chặn thường trả về thông báo lỗi "Giao diện bị hạn chế", "Chặn tính năng", hoặc mã lỗi chuyển hướng
+        if "checkpoint" in res.text or "xc_error" in res.text or "chặn" in res.text.lower() or "bị hạn chế" in res.text.lower():
+            print(f"[!!!] PHAT HIEN NICK BI FACEBOOK GIOI HAN TINH NANG KET BAN!")
+            return "blocked"
+            
         if res.status_code == 200:
-            print(f"[+] Da add thanh cong UID: {uid}")
-            return True
-    except: pass
-    return False
+            print(f"[+] Da gui ket ban thanh cong den UID: {uid}")
+            return "success"
+    except Exception as e:
+        print(f"[-] Loi ket noi den UID {uid}: {e}")
+    return "fail"
 
 def main():
-    cookie = doc_cookie()
-    if not kiem_tra_cookie_live(cookie):
-        cookie = tu_dong_lay_cookie()
+    print("[*] Tool bat dau vao VONG LAP VO HAN: Kết bạn 10 người/đợt -> Nghỉ 10 phút.")
+    
+    while True:
+        cookie = doc_cookie()
         if not kiem_tra_cookie_live(cookie):
-            print("[-] Dang nhap that bai. Check lai nick/2FA.")
-            return
-    danh_sach_uid = tu_dong_quet_uid_nu_thai_binh(cookie)
-    if not danh_sach_uid:
-        print("[-] Khong quet duoc UID.")
-        return
-    print(f"[+] Quet duoc {len(danh_sach_uid)} nguoi.")
-    so_luong_chay = min(3, len(danh_sach_uid))
-    uids_gio_nay = random.sample(danh_sach_uid, so_luong_chay)
-    for uid in uids_gio_nay:
-        gui_loi_moi_ket_ban(uid, cookie)
-        time.sleep(random.randint(30, 60))
-    print("[+] Hoan thanh.")
+            print("[-] Cookie DIE hoac khong tim thay file fb_cookie.txt. Doi 5 phut check lai...")
+            time.sleep(300)
+            continue
+
+        danh_sach_uid = quet_danh_sach_goi_y(cookie)
+        if not danh_sach_uid:
+            print("[-] Khong quet duoc UID goi y nao. Doi 5 phut quet lai...")
+            time.sleep(300)
+            continue
+
+        print(f"[+] Tim thay {len(danh_sach_uid)} nguoi.");
+        # Lấy tối đa 10 người để kết bạn liên tục trong lượt này
+        so_luong_can_add = min(10, len(danh_sach_uid))
+        uids_luot_nay = random.sample(danh_sach_uid, so_luong_can_add)
+        
+        bi_chan = False
+        count_success = 0
+        
+        print(f"[*] Bat dau gui ket ban lien tuc cho {so_luong_can_add} nguoi...")
+        for uid in uids_luot_nay:
+            ket_qua = gui_loi_moi_ket_ban(uid, cookie)
+            
+            if ket_qua == "blocked":
+                bi_chan = True
+                break # Thoát ngay lập tức khỏi vòng lặp kết bạn hiện tại
+                
+            if ket_qua == "success":
+                count_success += 1
+                
+            # Nghỉ giãn cách ngắn vài giây giữa các lệnh bấm để an toàn cho nick
+            time.sleep(random.randint(5, 15))
+
+        # XỬ LÝ KHI BỊ CHẶN: DỪNG TOOL 24 TIẾNG
+        if bi_chan:
+            print("[❌] BI FACEBOOK CHAN RỒI! Dang tien hanh ngu dong toan bo tool trong 24 TIENG...")
+            time.sleep(24 * 3600) # Nghỉ đúng 24 tiếng (86400 giây)
+            print("[*] Da het 24 tieng. Bat dau khoi dong lai vong lap de test lai...")
+            continue # Quay lại đầu vòng lặp lớn để tiếp tục
+
+        print(f"[===>] Hoan thanh dot gui. Da add duoc {count_success}/10 nguoi.")
+        print("[*] Theo yeu cau: Nghi 10 phut truoc khi lam luot moi...")
+        time.sleep(600) # Nghỉ đúng 10 phút (600 giây) rồi lặp lại từ đầu
 
 if __name__ == "__main__":
     main()
