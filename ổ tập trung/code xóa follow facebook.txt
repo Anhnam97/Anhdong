@@ -9,7 +9,6 @@ def doc_cookie():
     return ""
 
 def lay_uid_chinh_chu(cookie):
-    # Lấy UID của chính bạn từ cookie để loại trừ
     match = re.search(r'c_user=(\d+)', cookie)
     if match: return match.group(1)
     return ""
@@ -17,13 +16,14 @@ def lay_uid_chinh_chu(cookie):
 def kiem_tra_cookie_live(cookie):
     if not cookie: return False
     try:
-        res = requests.get("https://m.facebook.com/profile.php", headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Cookie': cookie}, timeout=10)
-        if "logout" in res.text.lower() or "save" in res.text.lower() or "bạn bè" in res.text: return True
+        res = requests.get("https://m.facebook.com/friends/?target_pivot_link=suggestions", headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Cookie': cookie}, timeout=10)
+        if "logout" in res.text.lower() or "save" in res.text.lower() or res.status_code == 200: return True
     except: pass
     return False
 
 def quet_danh_sach_goi_y(cookie, my_uid):
-    url = "https://m.facebook.com/friends/center/suggestions/"
+    # Sử dụng chính xác đường dẫn bạn gửi
+    url = "https://m.facebook.com/friends/?target_pivot_link=suggestions"
     uids = []
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -31,13 +31,15 @@ def quet_danh_sach_goi_y(cookie, my_uid):
     }
     try:
         res = requests.get(url, headers=headers, timeout=12)
-        matches = re.findall(r'uid=(\d+)', res.text) or re.findall(r'id=(\d+)', res.text)
+        
+        # Quét tất cả các định dạng ID người dùng trong cấu trúc HTML/JSON của trang gợi ý này
+        matches = re.findall(r'\"id\":\"(\d+)\"', res.text) or re.findall(r'uid=(\d+)', res.text) or re.findall(r'id=(\d+)', res.text)
+        
         for uid in matches:
-            # Loại bỏ UID của chính mình và các ID lỗi ngắn
-            if uid != my_uid and uid not in uids and len(uid) > 10:
+            if uid != my_uid and uid not in uids and len(uid) >= 10:
                 uids.append(uid)
     except Exception as e:
-        print(f"[-] Loi khi quet danh sach: {e}")
+        print(f"[-] Loi ket noi he thong khi quet: {e}")
     return uids
 
 def gui_loi_moi_ket_ban(uid, cookie):
@@ -53,7 +55,6 @@ def gui_loi_moi_ket_ban(uid, cookie):
             
         res = requests.post(f"https://m.facebook.com/a/friendrequest/?to_friend={uid}", headers=headers, timeout=10)
         
-        # KIỂM TRA BỊ FACEBOOK GIỚI HẠN
         detect_block_keywords = ["checkpoint", "xc_error", "chặn", "bị hạn chế", "hạn chế tính năng", "block", "spam"]
         if any(keyword in res.text.lower() for keyword in detect_block_keywords) or "checkpoint" in res.url:
             return "blocked"
@@ -64,42 +65,39 @@ def gui_loi_moi_ket_ban(uid, cookie):
     return "fail"
 
 def main():
-    print("[*] KHOI DONG TOOL HOAN TOAN MOI - HIEN THI TIEN DO REALTIME")
+    print("[*] KHOI DONG TIEN TRINH QUET GOI Y CHUAN LINK LINK MOI")
     
     while True:
         cookie = doc_cookie()
         if not kiem_tra_cookie_live(cookie):
-            print("[-] Cookie die hoac khong thay file fb_cookie.txt. Doi 5 phut...")
+            print("[-] Cookie die hoac loi file fb_cookie.txt. Doi 5 phut kiem tra lai...")
             time.sleep(300)
             continue
 
         my_uid = lay_uid_chinh_chu(cookie)
-        print(f"[+] Da nhan dien ID cua ban: {my_uid} (Tu dong loai tru khoi danh sach add)")
+        print(f"[+] Da nhan dien ID chu nick: {my_uid}")
 
         count_success = 0
         bi_chan = False
-        da_xu_ly = [] # Luu cac ID da bam trong dot nay de khong trung lap
+        da_xu_ly = []
 
         print("\n[==================================================]")
-        print("[*] TIEN TRINH: Bat dau quet va add DU 10 NGUOI...")
+        print("[*] TIEN TRINH: Bat dau quet va add LIEN TUC DU 10 NGUOI...")
         print("[==================================================]")
 
         while count_success < 10:
             danh_sach_uid = quet_danh_sach_goi_y(cookie, my_uid)
-            # Loc bot nhang UID da bam qua
             danh_sach_loc = [id for id in danh_sach_uid if id not in da_xu_ly]
 
             if not danh_sach_loc:
-                print("[-] Khong tim them duoc UID goi y moi nao tren trang. Dang load lai sau 30 giay...")
-                time.sleep(300)
+                print("[-] Chua lay them duoc ID goi y moi. Cho tool lay lai sau 15 giay...")
+                time.sleep(15)
                 continue
 
-            # Lay ra 1 UID de lam viec luon
             uid_chay = danh_sach_loc[0]
             da_xu_ly.append(uid_chay)
 
-            # HIỂN THỊ TIẾN ĐỘ VÀ SỐ ID ĐANG GỬI THEO YÊU CẦU
-            print(f"[*] [Tien do: {count_success}/10] -> Dang quet và gui den ID: {uid_chay}")
+            print(f"[*] [Dang gui: {count_success}/10] -> Dang tien hanh ket ban voi ID: {uid_chay}")
 
             ket_qua = gui_loi_moi_ket_ban(uid_chay, cookie)
 
@@ -109,26 +107,23 @@ def main():
 
             if ket_qua == "success":
                 count_success += 1
-                print(f"   => [OK] Da gui ket ban thanh cong den ID: {uid_chay}")
-                # Nghi ngan an toan giua cac phien bấm
+                print(f"   => [OK] Da gui thanh cong den ID: {uid_chay}")
                 time.sleep(random.randint(15, 30))
             elif ket_qua == "skip":
-                print(f"   => [Bo qua] ID {uid_chay} khong co nut ket ban hoac da gui truoc do.")
+                print(f"   => [Bo qua] ID {uid_chay} da gui hoac khoa nut.")
             else:
-                print(f"   => [Loi] Gui den ID {uid_chay} that bai.")
+                print(f"   => [That bai] Khong gui duoc cho ID {uid_chay}.")
 
         if bi_chan:
-            print("\n[❌] PHAT HIEN NICK BI LIMIT/CHAN TINH NANG TINH NANG KET BAN!")
-            print("[*] Kich hoat che do ngu dong toan bo tool trong 24 TIENG...")
+            print("\n[❌] PHAT HIEN FACEBOOK GIOI HAN TINH NANG NICK CUA BAN!")
+            print("[*] Dung chu ky chay, kich hoat che do CACH LY NGU DONG 24 TIENG...")
             time.sleep(24 * 3600)
-            print("[*] Da het 24 tieng reset lai chu ky chay...")
             continue
 
-        # KHI ĐỦ 10 NGƯỜI THỰC SỰ THÀNH CÔNG THÌ MỚI NGHỈ 10 PHÚT THEO LÔ-GÍC CỦA BẠN
-        print(f"\n[✔] HOAN THANH XUAT SAC: Da add dung quy dinh {count_success}/10 tai khoan.")
-        print("[*] He thong tam dung, bat dau dong ho dem nguoc nghi 10 PHUT...")
-        time.sleep(600) 
-        print("[*] Het thoi gian nghi 10 phut. Chuyen tiep sang vong lap chu ky tiep theo...\n")
+        print(f"\n[✔] DA HOAN THANH gui ket ban cho {count_success}/10 nguoi.")
+        print("[*] Bat dau chu ky nghi dung 10 PHUT truoc khi thuc hien luot moi...")
+        time.sleep(600)
+        print("[*] Ket thuc thoi gian nghi. Tu dong quay lai quet vong moi...\n")
 
 if __name__ == "__main__":
     main()
