@@ -1,193 +1,600 @@
-const axios = require('axios');
-const fs = require('fs-extra');
-const readline = require('readline');
+cat > fix_all.js << 'EOF'
+const fs = require('fs');
 const path = require('path');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
+// Tạo thư mục nếu chưa có
+const dirs = ['config', 'src', 'logs'];
+dirs.forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-function askQuestion(query) {
-  return new Promise(resolve => {
-    rl.question(query, answer => resolve(answer));
+// File 1: config/cookies.json
+fs.writeFileSync('config/cookies.json', JSON.stringify({
+  "cookie": "c_user=61590401439718; datr=UGE3amn30liW3FU-eHjfctq5; fr=1ekFndRraQvO6YvzU.AWdrt9DG7UxpCqLgIrwysSJdXY2If6kdL4fIROwJMdcAMeEbROo.BqN2Fh..AAA.0.0.BqN2bO.AWeanjUl30s_2oGfcyE5VDOa1Ik; presence=C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1782015704364%2C%22v%22%3A1%7D; sb=p103ao4lztZXa8fPfHY8F0o7; wd=920x925; xs=48%3Ar4d_0sr7rLYHmg%3A2%3A1782014301%3A-1%3A-1%3A%3AAczbADbG4eIMdWAbFC1PAd9JDTCm9IdNBYlkXGLkPQ",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "access_token": ""
+}, null, 2));
+
+// File 2: config/settings.json
+fs.writeFileSync('config/settings.json', JSON.stringify({
+  "target_friends": 20,
+  "work_duration": 60,
+  "rest_duration": 10,
+  "check_interval": 5,
+  "block_cooldown": 1440,
+  "max_retries": 3,
+  "friend_per_session": 5,
+  "delay_between_requests": 3000
+}, null, 2));
+
+// File 3: src/utils.js
+fs.writeFileSync('src/utils.js', `const fs = require('fs-extra');
+const path = require('path');
+const winston = require('winston');
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ 
+      filename: path.join(__dirname, '../logs/app.log'),
+      maxsize: 5242880,
+      maxFiles: 5
+    }),
+    new winston.transports.Console({
+      format: winston.format.simple()
+    })
+  ]
+});
+
+function getCookies() {
+  try {
+    const config = fs.readJsonSync(path.join(__dirname, '../config/cookies.json'));
+    return config;
+  } catch (error) {
+    logger.error('Khong the doc cookie: ' + error.message);
+    return null;
+  }
+}
+
+function getSettings() {
+  try {
+    const config = fs.readJsonSync(path.join(__dirname, '../config/settings.json'));
+    return config;
+  } catch (error) {
+    logger.error('Khong the doc settings: ' + error.message);
+    return null;
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function checkInternet() {
+  try {
+    const axios = require('axios');
+    const response = await axios.get('https://www.facebook.com', { timeout: 5000 });
+    return response.status === 200;
+  } catch {
+    return false;
+  }
+}
+
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  return date.toLocaleString('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh'
   });
 }
 
-async function getFacebookCookie(email, password, twoFactorCode = '') {
-  try {
-    console.log('🔐 Đang đăng nhập Facebook...');
-    
-    const loginPage = await axios.get('https://www.facebook.com/login', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    });
+module.exports = {
+  logger,
+  getCookies,
+  getSettings,
+  sleep,
+  checkInternet,
+  formatTime
+};`);
 
-    const cookies = loginPage.headers['set-cookie'] || [];
-    let cookieString = cookies.map(c => c.split(';')[0]).join('; ');
-    
-    const html = loginPage.data;
-    const lsdMatch = html.match(/name="lsd" value="([^"]+)"/);
-    const jazoestMatch = html.match(/name="jazoest" value="([^"]+)"/);
-    
-    if (!lsdMatch) {
-      throw new Error('Không thể lấy token đăng nhập');
-    }
+// File 4: src/check_block.js
+fs.writeFileSync('src/check_block.js', `const axios = require('axios');
+const { logger, getCookies } = require('./utils');
 
-    const lsd = lsdMatch[1];
-    const jazoest = jazoestMatch ? jazoestMatch[1] : '';
+class BlockChecker {
+  constructor() {
+    this.cookies = getCookies();
+    this.isBlocked = false;
+    this.blockStartTime = null;
+    this.checkCount = 0;
+  }
 
-    console.log('📝 Đang gửi thông tin đăng nhập...');
+  async checkBlockStatus() {
+    this.checkCount++;
+    logger.info('🔍 Kiem tra chan lan #' + this.checkCount + '...');
 
-    const loginData = new URLSearchParams({
-      'email': email,
-      'pass': password,
-      'lsd': lsd,
-      'jazoest': jazoest,
-      'login': 'Đăng nhập',
-      'try_number': '1',
-      'timezone': '7',
-      'lgndim': '',
-      'lgnrnd': Date.now().toString(),
-      'lgnjs': 'n',
-      '_fb_noscript': 'true'
-    });
-
-    const loginResponse = await axios.post(
-      'https://www.facebook.com/login/device-based/regular/login/?login_attempt=1',
-      loginData.toString(),
-      {
+    try {
+      const response = await axios.get('https://www.facebook.com/me', {
+        params: { fields: 'id,name' },
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': cookieString
+          'Cookie': this.cookies.cookie,
+          'User-Agent': this.cookies.user_agent
         },
-        maxRedirects: 0,
-        validateStatus: function (status) {
-          return status >= 200 && status < 400;
+        timeout: 10000
+      });
+
+      if (response.data && response.data.id) {
+        logger.info('✅ Tai khoan hoat dong binh thuong');
+        this.isBlocked = false;
+        return false;
+      }
+      return false;
+    } catch (error) {
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 403 || status === 401) {
+          logger.error('❌ PHAT HIEN BI CHAN!');
+          this.isBlocked = true;
+          this.blockStartTime = Date.now();
+          return true;
         }
       }
-    );
+      logger.warn('⚠️ Loi kiem tra: ' + error.message);
+      return false;
+    }
+  }
 
-    let allCookies = [...cookies, ...(loginResponse.headers['set-cookie'] || [])];
-    let finalCookieString = allCookies
-      .map(c => c.split(';')[0])
-      .filter(c => c.includes('='))
-      .join('; ');
+  isCooldownComplete(cooldownMinutes = 1440) {
+    if (!this.isBlocked || !this.blockStartTime) return true;
+    const elapsedMinutes = (Date.now() - this.blockStartTime) / (1000 * 60);
+    const isComplete = elapsedMinutes >= cooldownMinutes;
+    if (isComplete) {
+      logger.info('✅ Da het thoi gian chan');
+      this.isBlocked = false;
+      this.blockStartTime = null;
+      return true;
+    } else {
+      const remaining = Math.ceil(cooldownMinutes - elapsedMinutes);
+      const hours = Math.floor(remaining / 60);
+      const minutes = remaining % 60;
+      logger.info('⏳ Con ' + hours + 'h' + minutes + ' phut nua moi het chan');
+      return false;
+    }
+  }
 
-    // Kiểm tra nếu cần 2FA
-    if (finalCookieString.includes('checkpoint') || loginResponse.data.includes('checkpoint')) {
-      console.log('🔑 Yêu cầu mã 2FA!');
-      
-      if (!twoFactorCode) {
-        const code = await askQuestion('📱 Nhập mã 2FA (6 số): ');
-        twoFactorCode = code;
-      }
+  getBlockStatus() {
+    return {
+      isBlocked: this.isBlocked,
+      blockStartTime: this.blockStartTime,
+      blockedMinutes: this.blockStartTime ? (Date.now() - this.blockStartTime) / 60000 : 0,
+      checkCount: this.checkCount
+    };
+  }
 
-      // Gửi mã 2FA
-      const checkpointResponse = await axios.post(
-        'https://www.facebook.com/login/checkpoint/',
-        new URLSearchParams({
-          'approvals_code': twoFactorCode,
-          'lsd': lsd,
-          'submit[Continue]': 'Tiếp tục'
-        }).toString(),
+  resetCheckCount() {
+    this.checkCount = 0;
+  }
+}
+
+module.exports = BlockChecker;`);
+
+// File 5: src/auto_friend.js
+fs.writeFileSync('src/auto_friend.js', `const axios = require('axios');
+const { logger, getCookies, getSettings, sleep } = require('./utils');
+
+class AutoFriend {
+  constructor() {
+    this.cookies = getCookies();
+    this.settings = getSettings();
+    this.totalFriends = 0;
+    this.currentSessionFriends = 0;
+    this.isRunning = false;
+    this.failedRequests = 0;
+    this.successRequests = 0;
+  }
+
+  async sendFriendRequest(userId, userName = 'Unknown') {
+    try {
+      const response = await axios.post(
+        'https://www.facebook.com/' + userId + '/friends',
+        {},
         {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Cookie': finalCookieString
+            'Cookie': this.cookies.cookie,
+            'User-Agent': this.cookies.user_agent,
+            'Content-Type': 'application/json'
           },
-          maxRedirects: 0,
-          validateStatus: function (status) {
-            return status >= 200 && status < 400;
-          }
+          timeout: 15000
         }
       );
-
-      const checkpointCookies = checkpointResponse.headers['set-cookie'] || [];
-      allCookies = [...allCookies, ...checkpointCookies];
-      
-      finalCookieString = allCookies
-        .map(c => c.split(';')[0])
-        .filter(c => c.includes('='))
-        .join('; ');
+      if (response.status === 200) {
+        this.totalFriends++;
+        this.currentSessionFriends++;
+        this.successRequests++;
+        logger.info('✅ Da gui loi moi den ' + userName);
+        return true;
+      }
+      this.failedRequests++;
+      return false;
+    } catch (error) {
+      this.failedRequests++;
+      logger.error('❌ Loi gui loi moi: ' + error.message);
+      return false;
     }
+  }
 
-    if (!finalCookieString.includes('c_user=') || !finalCookieString.includes('xs=')) {
-      throw new Error('Đăng nhập thất bại, kiểm tra email/mật khẩu/mã 2FA');
+  async getCurrentFriends() {
+    try {
+      const response = await axios.get('https://www.facebook.com/me/friends', {
+        params: { limit: 100, fields: 'id,name' },
+        headers: {
+          'Cookie': this.cookies.cookie,
+          'User-Agent': this.cookies.user_agent
+        },
+        timeout: 10000
+      });
+      return response.data.data || [];
+    } catch (error) {
+      logger.error('❌ Lay danh sach ban be that bai: ' + error.message);
+      return [];
     }
+  }
 
-    console.log('✅ Đăng nhập thành công!');
-    return finalCookieString;
+  async getSuggestedUsers() {
+    try {
+      const currentFriends = await this.getCurrentFriends();
+      const friendIds = new Set(currentFriends.map(f => f.id));
+      const response = await axios.get('https://www.facebook.com/me/friends', {
+        params: { limit: 50, fields: 'id,name' },
+        headers: {
+          'Cookie': this.cookies.cookie,
+          'User-Agent': this.cookies.user_agent
+        },
+        timeout: 10000
+      });
+      const suggested = response.data.data || [];
+      const filtered = suggested.filter(user => !friendIds.has(user.id));
+      logger.info('📋 Tim thay ' + filtered.length + ' nguoi dung de xuat');
+      return filtered;
+    } catch (error) {
+      logger.error('❌ Lay danh sach de xuat that bai: ' + error.message);
+      return [];
+    }
+  }
 
-  } catch (error) {
-    console.error('❌ Lỗi đăng nhập:', error.message);
-    throw error;
+  async runAutoFriend(targetCount = 5) {
+    if (this.isRunning) {
+      logger.warn('⚠️ Qua trinh auto friend dang chay');
+      return false;
+    }
+    this.isRunning = true;
+    this.currentSessionFriends = 0;
+    this.failedRequests = 0;
+    this.successRequests = 0;
+    try {
+      const users = await this.getSuggestedUsers();
+      if (users.length === 0) {
+        logger.warn('⚠️ Khong tim thay nguoi dung de ket ban');
+        this.isRunning = false;
+        return false;
+      }
+      let successCount = 0;
+      const target = Math.min(targetCount, users.length);
+      for (let i = 0; i < users.length && successCount < target; i++) {
+        const user = users[i];
+        const result = await this.sendFriendRequest(user.id, user.name);
+        if (result) successCount++;
+        const delay = this.settings.delay_between_requests || 3000;
+        await sleep(delay + Math.random() * 2000);
+      }
+      logger.info('✅ Hoan thanh: ' + successCount + '/' + target + ' loi moi');
+      this.isRunning = false;
+      return successCount > 0;
+    } catch (error) {
+      logger.error('❌ Loi trong auto friend: ' + error.message);
+      this.isRunning = false;
+      return false;
+    }
+  }
+
+  getStats() {
+    return {
+      totalFriends: this.totalFriends,
+      currentSession: this.currentSessionFriends,
+      isRunning: this.isRunning,
+      successRequests: this.successRequests,
+      failedRequests: this.failedRequests
+    };
+  }
+
+  resetStats() {
+    this.currentSessionFriends = 0;
+    this.failedRequests = 0;
+    this.successRequests = 0;
   }
 }
 
-async function saveCookie(cookieString) {
-  const configDir = path.join(__dirname, 'config');
-  await fs.ensureDir(configDir);
-  
-  const cookieData = {
-    cookie: cookieString,
-    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    access_token: '',
-    last_updated: new Date().toISOString()
-  };
+module.exports = AutoFriend;`);
 
-  const filePath = path.join(configDir, 'cookies.json');
-  await fs.writeJson(filePath, cookieData, { spaces: 2 });
-  console.log('💾 Đã lưu cookie vào:', filePath);
-  return filePath;
-}
+// File 6: src/schedule_manager.js
+fs.writeFileSync('src/schedule_manager.js', `const { logger, getSettings, sleep } = require('./utils');
 
-async function main() {
-  try {
-    console.log('\n' + '='.repeat(50));
-    console.log('🔄 CÔNG CỤ LẤY COOKIE FACEBOOK');
-    console.log('='.repeat(50) + '\n');
+class ScheduleManager {
+  constructor() {
+    this.settings = getSettings();
+    this.workStartTime = null;
+    this.workEndTime = null;
+    this.isResting = false;
+    this.cycleCount = 0;
+    this.totalWorkTime = 0;
+    this.totalRestTime = 0;
+  }
 
-    const email = await askQuestion('📧 Email/SĐT Facebook: ');
-    const password = await askQuestion('🔑 Mật khẩu Facebook: ');
-    const has2FA = await askQuestion('🔐 Có mã 2FA? (y/n): ');
-    
-    let twoFactorCode = '';
-    if (has2FA.toLowerCase() === 'y') {
-      twoFactorCode = await askQuestion('📱 Nhập mã 2FA (6 số): ');
-    }
+  startWorkCycle() {
+    this.cycleCount++;
+    this.workStartTime = Date.now();
+    const workDuration = (this.settings.work_duration || 60) * 60 * 1000;
+    this.workEndTime = this.workStartTime + workDuration;
+    this.isResting = false;
+    const minutes = Math.floor(workDuration / 60000);
+    logger.info('🚀 Bat dau chu ky lam viec #' + this.cycleCount + ' (' + minutes + ' phut)');
+  }
 
-    console.log('\n⏳ Đang xử lý...');
+  async startRestCycle() {
+    this.isResting = true;
+    const restDuration = (this.settings.rest_duration || 10) * 60 * 1000;
+    this.totalRestTime += restDuration;
+    const minutes = Math.floor(restDuration / 60000);
+    logger.info('☕ Bat dau nghi ngoi (' + minutes + ' phut)');
+    await sleep(restDuration);
+    this.isResting = false;
+    this.totalWorkTime += (this.workEndTime - this.workStartTime);
+    logger.info('✅ Ket thuc nghi ngoi');
+  }
 
-    const cookie = await getFacebookCookie(email, password, twoFactorCode);
-    const filePath = await saveCookie(cookie);
+  isWorkTimeRemaining() {
+    if (!this.workEndTime) return false;
+    return Date.now() < this.workEndTime;
+  }
 
-    console.log('\n' + '='.repeat(50));
-    console.log('✅ THÀNH CÔNG!');
-    console.log('📁 Cookie đã lưu tại:', filePath);
-    console.log('='.repeat(50) + '\n');
+  getRemainingWorkTime() {
+    if (!this.workEndTime) return 0;
+    const remaining = Math.max(0, (this.workEndTime - Date.now()) / 60000);
+    return Math.ceil(remaining);
+  }
 
-    // Test cookie
-    console.log('🧪 Đang kiểm tra cookie...');
-    const config = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    
-    const test = await axios.get('https://graph.facebook.com/me', {
-      headers: { 'Cookie': config.cookie },
-      params: { fields: 'id,name' }
-    });
+  getStatus() {
+    return {
+      isResting: this.isResting,
+      workStartTime: this.workStartTime,
+      workEndTime: this.workEndTime,
+      remainingMinutes: this.getRemainingWorkTime(),
+      cycleCount: this.cycleCount,
+      totalWorkTime: this.totalWorkTime,
+      totalRestTime: this.totalRestTime
+    };
+  }
 
-    console.log('✅ Cookie hợp lệ!');
-    console.log('👤 Tên:', test.data.name);
-    console.log('🆔 ID:', test.data.id);
-
-  } catch (error) {
-    console.error('❌ Lỗi:', error.message);
-  } finally {
-    rl.close();
+  reset() {
+    this.workStartTime = null;
+    this.workEndTime = null;
+    this.isResting = false;
+    this.cycleCount = 0;
+    this.totalWorkTime = 0;
+    this.totalRestTime = 0;
   }
 }
 
-main();
+module.exports = ScheduleManager;`);
+
+// File 7: src/main.js
+fs.writeFileSync('src/main.js', `const { logger, getSettings, sleep, checkInternet } = require('./utils');
+const BlockChecker = require('./check_block');
+const AutoFriend = require('./auto_friend');
+const ScheduleManager = require('./schedule_manager');
+
+class MainApplication {
+  constructor() {
+    this.settings = getSettings();
+    this.blockChecker = new BlockChecker();
+    this.autoFriend = new AutoFriend();
+    this.scheduleManager = new ScheduleManager();
+    this.isRunning = true;
+    this.isBlocked = false;
+    this.startTime = Date.now();
+  }
+
+  async initialize() {
+    console.log('\\n' + '='.repeat(60));
+    logger.info('🚀 KHOI DONG HE THONG AUTO FRIEND');
+    console.log('='.repeat(60));
+    logger.info('📋 Muc tieu: ' + this.settings.target_friends + ' ban/ngay');
+    logger.info('⏱️ Chu ky: ' + this.settings.work_duration + ' phut lam viec / ' + this.settings.rest_duration + ' phut nghi');
+    console.log('='.repeat(60) + '\\n');
+    if (!await checkInternet()) {
+      logger.error('❌ Khong co ket noi Internet');
+      process.exit(1);
+    }
+    logger.info('✅ Ket noi Internet OK');
+    if (!this.blockChecker.cookies || !this.blockChecker.cookies.cookie) {
+      logger.error('❌ Cookie khong hop le');
+      process.exit(1);
+    }
+    logger.info('✅ Cookie OK');
+  }
+
+  async mainLoop() {
+    await this.initialize();
+    while (this.isRunning) {
+      try {
+        logger.info('\\n' + '-'.repeat(40));
+        logger.info('🔍 BUOC 1: KIEM TRA TRANG THAI CHAN');
+        logger.info('-'.repeat(40));
+        const isBlocked = await this.blockChecker.checkBlockStatus();
+        if (isBlocked) {
+          logger.warn('⚠️ PHAT HIEN BI CHAN!');
+          this.isBlocked = true;
+          const cooldown = this.settings.block_cooldown || 1440;
+          logger.info('⏳ Dung he thong ' + cooldown + ' phut (24 gio)');
+          const waitEnd = Date.now() + cooldown * 60 * 1000;
+          while (Date.now() < waitEnd && this.isRunning) {
+            const remaining = Math.ceil((waitEnd - Date.now()) / 60000);
+            const hours = Math.floor(remaining / 60);
+            const minutes = remaining % 60;
+            logger.info('⏳ Con ' + hours + 'h' + minutes + ' phut cho');
+            await sleep(600000);
+          }
+          if (!this.isRunning) break;
+          logger.info('🔄 Kiem tra lai sau 24 gio...');
+          const isStillBlocked = await this.blockChecker.checkBlockStatus();
+          if (isStillBlocked) {
+            logger.error('❌ Van bi chan, dung he thong!');
+            this.isRunning = false;
+            break;
+          } else {
+            logger.info('✅ Da het chan, tiep tuc hoat dong');
+            this.isBlocked = false;
+            this.blockChecker.resetCheckCount();
+            continue;
+          }
+        }
+        if (!this.isBlocked) {
+          logger.info('\\n' + '-'.repeat(40));
+          logger.info('🎯 BUOC 2: TU DONG KET BAN');
+          logger.info('-'.repeat(40));
+          this.scheduleManager.startWorkCycle();
+          let cycleComplete = false;
+          const friendPerSession = this.settings.friend_per_session || 5;
+          const targetTotal = this.settings.target_friends || 20;
+          while (this.scheduleManager.isWorkTimeRemaining() && this.isRunning) {
+            const checkBlock = await this.blockChecker.checkBlockStatus();
+            if (checkBlock) {
+              logger.warn('⚠️ Phat hien bi chan giua chung!');
+              this.isBlocked = true;
+              break;
+            }
+            const currentTotal = this.autoFriend.getStats().totalFriends;
+            const remainingTarget = targetTotal - currentTotal;
+            if (remainingTarget <= 0) {
+              logger.info('🎯 Da dat muc tieu ' + targetTotal + ' ban');
+              cycleComplete = true;
+              break;
+            }
+            const batchSize = Math.min(friendPerSession, remainingTarget);
+            await this.autoFriend.runAutoFriend(batchSize);
+            const stats = this.autoFriend.getStats();
+            logger.info('📊 Thong ke: Tong ' + stats.totalFriends + ' ban');
+            if (stats.totalFriends >= targetTotal) {
+              logger.info('🎉 HOAN THANH MUC TIEU ' + targetTotal + ' BAN!');
+              cycleComplete = true;
+              break;
+            }
+            logger.info('⏳ Nghi 30 giay truoc phien tiep theo...');
+            await sleep(30000);
+          }
+          if (!this.isBlocked && !cycleComplete) {
+            logger.info('\\n' + '-'.repeat(40));
+            logger.info('☕ BUOC 3: NGHI NGOI');
+            logger.info('-'.repeat(40));
+            await this.scheduleManager.startRestCycle();
+            const checkBlockAfterRest = await this.blockChecker.checkBlockStatus();
+            if (checkBlockAfterRest) {
+              this.isBlocked = true;
+            }
+          }
+        }
+        console.log('\\n' + '='.repeat(60));
+        logger.info('📊 TRANG THAI HE THONG');
+        console.log('='.repeat(60));
+        const blockStatus = this.blockChecker.getBlockStatus();
+        const friendStats = this.autoFriend.getStats();
+        const scheduleStatus = this.scheduleManager.getStatus();
+        logger.info('🔒 Chan: ' + (blockStatus.isBlocked ? 'CO' : 'KHONG'));
+        logger.info('👥 Tong ban: ' + friendStats.totalFriends);
+        logger.info('🔄 Chu ky: ' + scheduleStatus.cycleCount);
+        console.log('='.repeat(60) + '\\n');
+      } catch (error) {
+        logger.error('❌ Loi trong main loop: ' + error.message);
+        await sleep(60000);
+      }
+    }
+    logger.info('🛑 He thong da dung');
+  }
+
+  stop() {
+    this.isRunning = false;
+    logger.info('🛑 Dang dung he thong...');
+  }
+}
+
+const app = new MainApplication();
+app.mainLoop();
+
+process.on('SIGINT', function() {
+  console.log('\\n⚠️ Nhan tin hieu SIGINT');
+  app.stop();
+  setTimeout(function() { process.exit(0); }, 3000);
+});
+
+process.on('SIGTERM', function() {
+  console.log('\\n⚠️ Nhan tin hieu SIGTERM');
+  app.stop();
+  setTimeout(function() { process.exit(0); }, 3000);
+});
+
+module.exports = app;`);
+
+// File 8: package.json
+fs.writeFileSync('package.json', JSON.stringify({
+  "name": "fb-auto-friend",
+  "version": "1.0.0",
+  "description": "Auto friend Facebook on Pi Zero",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js",
+    "pm2-start": "pm2 start ecosystem.config.js",
+    "pm2-stop": "pm2 stop fb-auto-friend",
+    "pm2-restart": "pm2 restart fb-auto-friend",
+    "pm2-logs": "pm2 logs fb-auto-friend",
+    "pm2-status": "pm2 status"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "fs-extra": "^11.1.0",
+    "moment": "^2.29.4",
+    "winston": "^3.11.0"
+  }
+}, null, 2));
+
+// File 9: ecosystem.config.js
+fs.writeFileSync('ecosystem.config.js', `module.exports = {
+  apps: [{
+    name: 'fb-auto-friend',
+    script: './src/main.js',
+    instances: 1,
+    exec_mode: 'fork',
+    watch: false,
+    max_memory_restart: '200M',
+    error_file: './logs/pm2-error.log',
+    out_file: './logs/pm2-out.log',
+    log_file: './logs/pm2-combined.log',
+    time: true,
+    autorestart: true,
+    restart_delay: 10000,
+    max_restarts: 10,
+    min_uptime: '10s',
+    kill_timeout: 3000,
+    env: {
+      NODE_ENV: 'production'
+    }
+  }]
+};`);
+
+console.log('✅ TẤT CẢ FILE ĐÃ ĐƯỢC GHI ĐÈ!');
+console.log('📁 Số file đã tạo:', fs.readdirSync('.').length);
+console.log('📂 Folder: config, src, logs');
+console.log('🚀 Chạy lệnh: npm install && node src/main.js');
+EOF
