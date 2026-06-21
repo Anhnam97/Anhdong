@@ -1,63 +1,157 @@
-# -*- coding: utf-8 -*-
-import time, random
-from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth_sync
+cat > src/main.js << 'EOF'
+const { logger, getSettings, sleep, checkInternet } = require('./utils');
+const BlockChecker = require('./check_block');
+const AutoFriend = require('./auto_friend');
+const ScheduleManager = require('./schedule_manager');
 
-COOKIE_FILE = "fb_cookie.txt"
+class MainApplication {
+  constructor() {
+    this.settings = getSettings();
+    this.blockChecker = new BlockChecker();
+    this.autoFriend = new AutoFriend();
+    this.scheduleManager = new ScheduleManager();
+    this.isRunning = true;
+    this.isBlocked = false;
+    this.startTime = Date.now();
+  }
 
-def get_cookie():
-    try:
-        with open(COOKIE_FILE, "r") as f: return f.read().strip()
-    except: return ""
+  async initialize() {
+    console.log('\n' + '='.repeat(60));
+    logger.info('KHOI DONG HE THONG AUTO FRIEND');
+    console.log('='.repeat(60));
+    logger.info('Muc tieu: ' + this.settings.target_friends + ' ban/ngay');
+    logger.info('Chu ky: ' + this.settings.work_duration + ' phut lam viec / ' + this.settings.rest_duration + ' phut nghi');
+    console.log('='.repeat(60) + '\n');
+    if (!await checkInternet()) {
+      logger.error('Khong co ket noi Internet');
+      process.exit(1);
+    }
+    logger.info('Ket noi Internet OK');
+    if (!this.blockChecker.cookies || !this.blockChecker.cookies.cookie) {
+      logger.error('Cookie khong hop le');
+      process.exit(1);
+    }
+    logger.info('Cookie OK');
+  }
 
-def main():
-    cookie_str = get_cookie()
-    with sync_playwright() as p:
-        # Cấu hình trình duyệt với Profile di động thật
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
-            viewport={"width": 393, "height": 852},
-            device_scale_factor=3,
-            is_mobile=True,
-            has_touch=True
-        )
-        
-        page = context.new_page()
-        # Áp dụng công nghệ Stealth (Ẩn dấu vết robot)
-        stealth_sync(page)
-        
-        # Nạp Cookie
-        cookies = [{"name": c.split("=")[0], "value": c.split("=")[1], "domain": ".facebook.com", "path": "/"} 
-                   for c in cookie_str.split(";") if "=" in c]
-        context.add_cookies(cookies)
+  async mainLoop() {
+    await this.initialize();
+    while (this.isRunning) {
+      try {
+        logger.info('\n' + '-'.repeat(40));
+        logger.info('BUOC 1: KIEM TRA TRANG THAI CHAN');
+        logger.info('-'.repeat(40));
+        const isBlocked = await this.blockChecker.checkBlockStatus();
+        if (isBlocked) {
+          logger.warn('PHAT HIEN BI CHAN!');
+          this.isBlocked = true;
+          const cooldown = this.settings.block_cooldown || 1440;
+          logger.info('Dung he thong ' + cooldown + ' phut (24 gio)');
+          const waitEnd = Date.now() + cooldown * 60 * 1000;
+          while (Date.now() < waitEnd && this.isRunning) {
+            const remaining = Math.ceil((waitEnd - Date.now()) / 60000);
+            const hours = Math.floor(remaining / 60);
+            const minutes = remaining % 60;
+            logger.info('Con ' + hours + 'h' + minutes + ' phut cho');
+            await sleep(600000);
+          }
+          if (!this.isRunning) break;
+          logger.info('Kiem tra lai sau 24 gio...');
+          const isStillBlocked = await this.blockChecker.checkBlockStatus();
+          if (isStillBlocked) {
+            logger.error('Van bi chan, dung he thong!');
+            this.isRunning = false;
+            break;
+          } else {
+            logger.info('Da het chan, tiep tuc hoat dong');
+            this.isBlocked = false;
+            this.blockChecker.resetCheckCount();
+            continue;
+          }
+        }
+        if (!this.isBlocked) {
+          logger.info('\n' + '-'.repeat(40));
+          logger.info('BUOC 2: TU DONG KET BAN');
+          logger.info('-'.repeat(40));
+          this.scheduleManager.startWorkCycle();
+          let cycleComplete = false;
+          const friendPerSession = this.settings.friend_per_session || 5;
+          const targetTotal = this.settings.target_friends || 20;
+          while (this.scheduleManager.isWorkTimeRemaining() && this.isRunning) {
+            const checkBlock = await this.blockChecker.checkBlockStatus();
+            if (checkBlock) {
+              logger.warn('Phat hien bi chan giua chung!');
+              this.isBlocked = true;
+              break;
+            }
+            const currentTotal = this.autoFriend.getStats().totalFriends;
+            const remainingTarget = targetTotal - currentTotal;
+            if (remainingTarget <= 0) {
+              logger.info('Da dat muc tieu ' + targetTotal + ' ban');
+              cycleComplete = true;
+              break;
+            }
+            const batchSize = Math.min(friendPerSession, remainingTarget);
+            await this.autoFriend.runAutoFriend(batchSize);
+            const stats = this.autoFriend.getStats();
+            logger.info('Thong ke: Tong ' + stats.totalFriends + ' ban');
+            if (stats.totalFriends >= targetTotal) {
+              logger.info('HOAN THANH MUC TIEU ' + targetTotal + ' BAN!');
+              cycleComplete = true;
+              break;
+            }
+            logger.info('Nghi 30 giay truoc phien tiep theo...');
+            await sleep(30000);
+          }
+          if (!this.isBlocked && !cycleComplete) {
+            logger.info('\n' + '-'.repeat(40));
+            logger.info('BUOC 3: NGHI NGOI');
+            logger.info('-'.repeat(40));
+            await this.scheduleManager.startRestCycle();
+            const checkBlockAfterRest = await this.blockChecker.checkBlockStatus();
+            if (checkBlockAfterRest) {
+              this.isBlocked = true;
+            }
+          }
+        }
+        console.log('\n' + '='.repeat(60));
+        logger.info('TRANG THAI HE THONG');
+        console.log('='.repeat(60));
+        const blockStatus = this.blockChecker.getBlockStatus();
+        const friendStats = this.autoFriend.getStats();
+        const scheduleStatus = this.scheduleManager.getStatus();
+        logger.info('Chan: ' + (blockStatus.isBlocked ? 'CO' : 'KHONG'));
+        logger.info('Tong ban: ' + friendStats.totalFriends);
+        logger.info('Chu ky: ' + scheduleStatus.cycleCount);
+        console.log('='.repeat(60) + '\n');
+      } catch (error) {
+        logger.error('Loi trong main loop: ' + error.message);
+        await sleep(60000);
+      }
+    }
+    logger.info('He thong da dung');
+  }
 
-        while True:
-            print("[*] Dang ket noi...")
-            try:
-                page.goto("https://m.facebook.com/friends/center/suggestions/", timeout=60000)
-                page.wait_for_timeout(5000)
-                
-                # Tìm nút bằng nhiều cách (XPath đa dạng)
-                buttons = page.locator('//button[contains(text(), "Thêm bạn")] | //a[contains(@href, "/a/friendrequest/")]').all()
-                
-                if not buttons:
-                    # Nếu không thấy nút, hãy ép Facebook tin rằng chúng ta đang lướt thật
-                    page.mouse.wheel(0, 800)
-                    page.wait_for_timeout(3000)
-                    buttons = page.locator('//button[contains(text(), "Thêm bạn")]').all()
+  stop() {
+    this.isRunning = false;
+    logger.info('Dang dung he thong...');
+  }
+}
 
-                if buttons:
-                    for btn in buttons[:10]: # Mỗi lần chỉ làm 10 người cho an toàn
-                        btn.click()
-                        print("[*] Da gui loi moi...")
-                        time.sleep(random.randint(120, 180)) 
-                else:
-                    print("[-] Khong thay nut. Nick co the dang bi Facebook han che tinh nang nay.")
-                    time.sleep(300)
-            except Exception as e:
-                print(f"[-] Loi: {e}")
-                time.sleep(30)
+var app = new MainApplication();
+app.mainLoop();
 
-if __name__ == "__main__":
-    main()
+process.on('SIGINT', function() {
+  console.log('\nNhan tin hieu SIGINT');
+  app.stop();
+  setTimeout(function() { process.exit(0); }, 3000);
+});
+
+process.on('SIGTERM', function() {
+  console.log('\nNhan tin hieu SIGTERM');
+  app.stop();
+  setTimeout(function() { process.exit(0); }, 3000);
+});
+
+module.exports = app;
+EOF
