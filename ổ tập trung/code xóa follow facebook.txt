@@ -1,159 +1,193 @@
 const axios = require('axios');
-const { logger, getCookies, getSettings, sleep } = require('./utils');
+const fs = require('fs-extra');
+const readline = require('readline');
+const path = require('path');
 
-class AutoFriend {
-  constructor() {
-    this.cookies = getCookies();
-    this.settings = getSettings();
-    this.totalFriends = 0;
-    this.currentSessionFriends = 0;
-    this.isRunning = false;
-    this.failedRequests = 0;
-    this.successRequests = 0;
-  }
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-  async sendFriendRequest(userId, userName = 'Unknown') {
-    try {
-      const response = await axios.post(
-        `https://graph.facebook.com/${userId}/friends`,
-        {},
+function askQuestion(query) {
+  return new Promise(resolve => {
+    rl.question(query, answer => resolve(answer));
+  });
+}
+
+async function getFacebookCookie(email, password, twoFactorCode = '') {
+  try {
+    console.log('🔐 Đang đăng nhập Facebook...');
+    
+    const loginPage = await axios.get('https://www.facebook.com/login', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    const cookies = loginPage.headers['set-cookie'] || [];
+    let cookieString = cookies.map(c => c.split(';')[0]).join('; ');
+    
+    const html = loginPage.data;
+    const lsdMatch = html.match(/name="lsd" value="([^"]+)"/);
+    const jazoestMatch = html.match(/name="jazoest" value="([^"]+)"/);
+    
+    if (!lsdMatch) {
+      throw new Error('Không thể lấy token đăng nhập');
+    }
+
+    const lsd = lsdMatch[1];
+    const jazoest = jazoestMatch ? jazoestMatch[1] : '';
+
+    console.log('📝 Đang gửi thông tin đăng nhập...');
+
+    const loginData = new URLSearchParams({
+      'email': email,
+      'pass': password,
+      'lsd': lsd,
+      'jazoest': jazoest,
+      'login': 'Đăng nhập',
+      'try_number': '1',
+      'timezone': '7',
+      'lgndim': '',
+      'lgnrnd': Date.now().toString(),
+      'lgnjs': 'n',
+      '_fb_noscript': 'true'
+    });
+
+    const loginResponse = await axios.post(
+      'https://www.facebook.com/login/device-based/regular/login/?login_attempt=1',
+      loginData.toString(),
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cookie': cookieString
+        },
+        maxRedirects: 0,
+        validateStatus: function (status) {
+          return status >= 200 && status < 400;
+        }
+      }
+    );
+
+    let allCookies = [...cookies, ...(loginResponse.headers['set-cookie'] || [])];
+    let finalCookieString = allCookies
+      .map(c => c.split(';')[0])
+      .filter(c => c.includes('='))
+      .join('; ');
+
+    // Kiểm tra nếu cần 2FA
+    if (finalCookieString.includes('checkpoint') || loginResponse.data.includes('checkpoint')) {
+      console.log('🔑 Yêu cầu mã 2FA!');
+      
+      if (!twoFactorCode) {
+        const code = await askQuestion('📱 Nhập mã 2FA (6 số): ');
+        twoFactorCode = code;
+      }
+
+      // Gửi mã 2FA
+      const checkpointResponse = await axios.post(
+        'https://www.facebook.com/login/checkpoint/',
+        new URLSearchParams({
+          'approvals_code': twoFactorCode,
+          'lsd': lsd,
+          'submit[Continue]': 'Tiếp tục'
+        }).toString(),
         {
           headers: {
-            'Cookie': this.cookies.cookie,
-            'User-Agent': this.cookies.user_agent,
-            'Content-Type': 'application/json'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Cookie': finalCookieString
           },
-          timeout: 15000
+          maxRedirects: 0,
+          validateStatus: function (status) {
+            return status >= 200 && status < 400;
+          }
         }
       );
 
-      if (response.status === 200) {
-        this.totalFriends++;
-        this.currentSessionFriends++;
-        this.successRequests++;
-        logger.info('Da gui loi moi den ' + userName);
-        return true;
-      }
+      const checkpointCookies = checkpointResponse.headers['set-cookie'] || [];
+      allCookies = [...allCookies, ...checkpointCookies];
       
-      this.failedRequests++;
-      return false;
-    } catch (error) {
-      this.failedRequests++;
-      logger.error('Loi gui loi moi: ' + error.message);
-      return false;
-    }
-  }
-
-  async getCurrentFriends() {
-    try {
-      const response = await axios.get('https://graph.facebook.com/me/friends', {
-        params: {
-          limit: 100,
-          fields: 'id,name'
-        },
-        headers: {
-          'Cookie': this.cookies.cookie,
-          'User-Agent': this.cookies.user_agent
-        },
-        timeout: 10000
-      });
-
-      return response.data.data || [];
-    } catch (error) {
-      logger.error('Lay danh sach ban be that bai: ' + error.message);
-      return [];
-    }
-  }
-
-  async getSuggestedUsers() {
-    try {
-      const currentFriends = await this.getCurrentFriends();
-      const friendIds = new Set(currentFriends.map(f => f.id));
-
-      const response = await axios.get('https://graph.facebook.com/me/friends', {
-        params: {
-          limit: 50,
-          fields: 'id,name,email',
-          order: 'random'
-        },
-        headers: {
-          'Cookie': this.cookies.cookie,
-          'User-Agent': this.cookies.user_agent
-        },
-        timeout: 10000
-      });
-
-      const suggested = response.data.data || [];
-      const filtered = suggested.filter(user => !friendIds.has(user.id));
-      
-      logger.info('Tim thay ' + filtered.length + ' nguoi dung de xuat');
-      return filtered;
-    } catch (error) {
-      logger.error('Lay danh sach de xuat that bai: ' + error.message);
-      return [];
-    }
-  }
-
-  async runAutoFriend(targetCount = 5) {
-    if (this.isRunning) {
-      logger.warn('Qua trinh auto friend dang chay');
-      return false;
+      finalCookieString = allCookies
+        .map(c => c.split(';')[0])
+        .filter(c => c.includes('='))
+        .join('; ');
     }
 
-    this.isRunning = true;
-    this.currentSessionFriends = 0;
-    this.failedRequests = 0;
-    this.successRequests = 0;
-
-    try {
-      const users = await this.getSuggestedUsers();
-      
-      if (users.length === 0) {
-        logger.warn('Khong tim thay nguoi dung de ket ban');
-        this.isRunning = false;
-        return false;
-      }
-
-      let successCount = 0;
-      const target = Math.min(targetCount, users.length);
-      
-      for (let i = 0; i < users.length && successCount < target; i++) {
-        const user = users[i];
-        const result = await this.sendFriendRequest(user.id, user.name);
-        
-        if (result) {
-          successCount++;
-        }
-
-        const delay = this.settings.delay_between_requests || 3000;
-        await sleep(delay + Math.random() * 2000);
-      }
-
-      logger.info('Hoan thanh: ' + successCount + '/' + target + ' loi moi');
-      this.isRunning = false;
-      return successCount > 0;
-    } catch (error) {
-      logger.error('Loi trong auto friend: ' + error.message);
-      this.isRunning = false;
-      return false;
+    if (!finalCookieString.includes('c_user=') || !finalCookieString.includes('xs=')) {
+      throw new Error('Đăng nhập thất bại, kiểm tra email/mật khẩu/mã 2FA');
     }
-  }
 
-  getStats() {
-    return {
-      totalFriends: this.totalFriends,
-      currentSession: this.currentSessionFriends,
-      isRunning: this.isRunning,
-      successRequests: this.successRequests,
-      failedRequests: this.failedRequests
-    };
-  }
+    console.log('✅ Đăng nhập thành công!');
+    return finalCookieString;
 
-  resetStats() {
-    this.currentSessionFriends = 0;
-    this.failedRequests = 0;
-    this.successRequests = 0;
+  } catch (error) {
+    console.error('❌ Lỗi đăng nhập:', error.message);
+    throw error;
   }
 }
 
-module.exports = AutoFriend;
+async function saveCookie(cookieString) {
+  const configDir = path.join(__dirname, 'config');
+  await fs.ensureDir(configDir);
+  
+  const cookieData = {
+    cookie: cookieString,
+    user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    access_token: '',
+    last_updated: new Date().toISOString()
+  };
+
+  const filePath = path.join(configDir, 'cookies.json');
+  await fs.writeJson(filePath, cookieData, { spaces: 2 });
+  console.log('💾 Đã lưu cookie vào:', filePath);
+  return filePath;
+}
+
+async function main() {
+  try {
+    console.log('\n' + '='.repeat(50));
+    console.log('🔄 CÔNG CỤ LẤY COOKIE FACEBOOK');
+    console.log('='.repeat(50) + '\n');
+
+    const email = await askQuestion('📧 Email/SĐT Facebook: ');
+    const password = await askQuestion('🔑 Mật khẩu Facebook: ');
+    const has2FA = await askQuestion('🔐 Có mã 2FA? (y/n): ');
+    
+    let twoFactorCode = '';
+    if (has2FA.toLowerCase() === 'y') {
+      twoFactorCode = await askQuestion('📱 Nhập mã 2FA (6 số): ');
+    }
+
+    console.log('\n⏳ Đang xử lý...');
+
+    const cookie = await getFacebookCookie(email, password, twoFactorCode);
+    const filePath = await saveCookie(cookie);
+
+    console.log('\n' + '='.repeat(50));
+    console.log('✅ THÀNH CÔNG!');
+    console.log('📁 Cookie đã lưu tại:', filePath);
+    console.log('='.repeat(50) + '\n');
+
+    // Test cookie
+    console.log('🧪 Đang kiểm tra cookie...');
+    const config = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    
+    const test = await axios.get('https://graph.facebook.com/me', {
+      headers: { 'Cookie': config.cookie },
+      params: { fields: 'id,name' }
+    });
+
+    console.log('✅ Cookie hợp lệ!');
+    console.log('👤 Tên:', test.data.name);
+    console.log('🆔 ID:', test.data.id);
+
+  } catch (error) {
+    console.error('❌ Lỗi:', error.message);
+  } finally {
+    rl.close();
+  }
+}
+
+main();
