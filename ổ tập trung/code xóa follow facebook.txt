@@ -1,4 +1,3 @@
-cat > src/main.js << 'EOF'
 const { logger, getSettings, sleep, checkInternet } = require('./utils');
 const BlockChecker = require('./check_block');
 const AutoFriend = require('./auto_friend');
@@ -154,4 +153,3 @@ process.on('SIGTERM', function() {
 });
 
 module.exports = app;
-EOF
