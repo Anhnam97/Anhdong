@@ -1,155 +1,159 @@
-const { logger, getSettings, sleep, checkInternet } = require('./utils');
-const BlockChecker = require('./check_block');
-const AutoFriend = require('./auto_friend');
-const ScheduleManager = require('./schedule_manager');
+const axios = require('axios');
+const { logger, getCookies, getSettings, sleep } = require('./utils');
 
-class MainApplication {
+class AutoFriend {
   constructor() {
+    this.cookies = getCookies();
     this.settings = getSettings();
-    this.blockChecker = new BlockChecker();
-    this.autoFriend = new AutoFriend();
-    this.scheduleManager = new ScheduleManager();
-    this.isRunning = true;
-    this.isBlocked = false;
-    this.startTime = Date.now();
-  }
-
-  async initialize() {
-    console.log('\n' + '='.repeat(60));
-    logger.info('KHOI DONG HE THONG AUTO FRIEND');
-    console.log('='.repeat(60));
-    logger.info('Muc tieu: ' + this.settings.target_friends + ' ban/ngay');
-    logger.info('Chu ky: ' + this.settings.work_duration + ' phut lam viec / ' + this.settings.rest_duration + ' phut nghi');
-    console.log('='.repeat(60) + '\n');
-    if (!await checkInternet()) {
-      logger.error('Khong co ket noi Internet');
-      process.exit(1);
-    }
-    logger.info('Ket noi Internet OK');
-    if (!this.blockChecker.cookies || !this.blockChecker.cookies.cookie) {
-      logger.error('Cookie khong hop le');
-      process.exit(1);
-    }
-    logger.info('Cookie OK');
-  }
-
-  async mainLoop() {
-    await this.initialize();
-    while (this.isRunning) {
-      try {
-        logger.info('\n' + '-'.repeat(40));
-        logger.info('BUOC 1: KIEM TRA TRANG THAI CHAN');
-        logger.info('-'.repeat(40));
-        const isBlocked = await this.blockChecker.checkBlockStatus();
-        if (isBlocked) {
-          logger.warn('PHAT HIEN BI CHAN!');
-          this.isBlocked = true;
-          const cooldown = this.settings.block_cooldown || 1440;
-          logger.info('Dung he thong ' + cooldown + ' phut (24 gio)');
-          const waitEnd = Date.now() + cooldown * 60 * 1000;
-          while (Date.now() < waitEnd && this.isRunning) {
-            const remaining = Math.ceil((waitEnd - Date.now()) / 60000);
-            const hours = Math.floor(remaining / 60);
-            const minutes = remaining % 60;
-            logger.info('Con ' + hours + 'h' + minutes + ' phut cho');
-            await sleep(600000);
-          }
-          if (!this.isRunning) break;
-          logger.info('Kiem tra lai sau 24 gio...');
-          const isStillBlocked = await this.blockChecker.checkBlockStatus();
-          if (isStillBlocked) {
-            logger.error('Van bi chan, dung he thong!');
-            this.isRunning = false;
-            break;
-          } else {
-            logger.info('Da het chan, tiep tuc hoat dong');
-            this.isBlocked = false;
-            this.blockChecker.resetCheckCount();
-            continue;
-          }
-        }
-        if (!this.isBlocked) {
-          logger.info('\n' + '-'.repeat(40));
-          logger.info('BUOC 2: TU DONG KET BAN');
-          logger.info('-'.repeat(40));
-          this.scheduleManager.startWorkCycle();
-          let cycleComplete = false;
-          const friendPerSession = this.settings.friend_per_session || 5;
-          const targetTotal = this.settings.target_friends || 20;
-          while (this.scheduleManager.isWorkTimeRemaining() && this.isRunning) {
-            const checkBlock = await this.blockChecker.checkBlockStatus();
-            if (checkBlock) {
-              logger.warn('Phat hien bi chan giua chung!');
-              this.isBlocked = true;
-              break;
-            }
-            const currentTotal = this.autoFriend.getStats().totalFriends;
-            const remainingTarget = targetTotal - currentTotal;
-            if (remainingTarget <= 0) {
-              logger.info('Da dat muc tieu ' + targetTotal + ' ban');
-              cycleComplete = true;
-              break;
-            }
-            const batchSize = Math.min(friendPerSession, remainingTarget);
-            await this.autoFriend.runAutoFriend(batchSize);
-            const stats = this.autoFriend.getStats();
-            logger.info('Thong ke: Tong ' + stats.totalFriends + ' ban');
-            if (stats.totalFriends >= targetTotal) {
-              logger.info('HOAN THANH MUC TIEU ' + targetTotal + ' BAN!');
-              cycleComplete = true;
-              break;
-            }
-            logger.info('Nghi 30 giay truoc phien tiep theo...');
-            await sleep(30000);
-          }
-          if (!this.isBlocked && !cycleComplete) {
-            logger.info('\n' + '-'.repeat(40));
-            logger.info('BUOC 3: NGHI NGOI');
-            logger.info('-'.repeat(40));
-            await this.scheduleManager.startRestCycle();
-            const checkBlockAfterRest = await this.blockChecker.checkBlockStatus();
-            if (checkBlockAfterRest) {
-              this.isBlocked = true;
-            }
-          }
-        }
-        console.log('\n' + '='.repeat(60));
-        logger.info('TRANG THAI HE THONG');
-        console.log('='.repeat(60));
-        const blockStatus = this.blockChecker.getBlockStatus();
-        const friendStats = this.autoFriend.getStats();
-        const scheduleStatus = this.scheduleManager.getStatus();
-        logger.info('Chan: ' + (blockStatus.isBlocked ? 'CO' : 'KHONG'));
-        logger.info('Tong ban: ' + friendStats.totalFriends);
-        logger.info('Chu ky: ' + scheduleStatus.cycleCount);
-        console.log('='.repeat(60) + '\n');
-      } catch (error) {
-        logger.error('Loi trong main loop: ' + error.message);
-        await sleep(60000);
-      }
-    }
-    logger.info('He thong da dung');
-  }
-
-  stop() {
+    this.totalFriends = 0;
+    this.currentSessionFriends = 0;
     this.isRunning = false;
-    logger.info('Dang dung he thong...');
+    this.failedRequests = 0;
+    this.successRequests = 0;
+  }
+
+  async sendFriendRequest(userId, userName = 'Unknown') {
+    try {
+      const response = await axios.post(
+        `https://graph.facebook.com/${userId}/friends`,
+        {},
+        {
+          headers: {
+            'Cookie': this.cookies.cookie,
+            'User-Agent': this.cookies.user_agent,
+            'Content-Type': 'application/json'
+          },
+          timeout: 15000
+        }
+      );
+
+      if (response.status === 200) {
+        this.totalFriends++;
+        this.currentSessionFriends++;
+        this.successRequests++;
+        logger.info('Da gui loi moi den ' + userName);
+        return true;
+      }
+      
+      this.failedRequests++;
+      return false;
+    } catch (error) {
+      this.failedRequests++;
+      logger.error('Loi gui loi moi: ' + error.message);
+      return false;
+    }
+  }
+
+  async getCurrentFriends() {
+    try {
+      const response = await axios.get('https://graph.facebook.com/me/friends', {
+        params: {
+          limit: 100,
+          fields: 'id,name'
+        },
+        headers: {
+          'Cookie': this.cookies.cookie,
+          'User-Agent': this.cookies.user_agent
+        },
+        timeout: 10000
+      });
+
+      return response.data.data || [];
+    } catch (error) {
+      logger.error('Lay danh sach ban be that bai: ' + error.message);
+      return [];
+    }
+  }
+
+  async getSuggestedUsers() {
+    try {
+      const currentFriends = await this.getCurrentFriends();
+      const friendIds = new Set(currentFriends.map(f => f.id));
+
+      const response = await axios.get('https://graph.facebook.com/me/friends', {
+        params: {
+          limit: 50,
+          fields: 'id,name,email',
+          order: 'random'
+        },
+        headers: {
+          'Cookie': this.cookies.cookie,
+          'User-Agent': this.cookies.user_agent
+        },
+        timeout: 10000
+      });
+
+      const suggested = response.data.data || [];
+      const filtered = suggested.filter(user => !friendIds.has(user.id));
+      
+      logger.info('Tim thay ' + filtered.length + ' nguoi dung de xuat');
+      return filtered;
+    } catch (error) {
+      logger.error('Lay danh sach de xuat that bai: ' + error.message);
+      return [];
+    }
+  }
+
+  async runAutoFriend(targetCount = 5) {
+    if (this.isRunning) {
+      logger.warn('Qua trinh auto friend dang chay');
+      return false;
+    }
+
+    this.isRunning = true;
+    this.currentSessionFriends = 0;
+    this.failedRequests = 0;
+    this.successRequests = 0;
+
+    try {
+      const users = await this.getSuggestedUsers();
+      
+      if (users.length === 0) {
+        logger.warn('Khong tim thay nguoi dung de ket ban');
+        this.isRunning = false;
+        return false;
+      }
+
+      let successCount = 0;
+      const target = Math.min(targetCount, users.length);
+      
+      for (let i = 0; i < users.length && successCount < target; i++) {
+        const user = users[i];
+        const result = await this.sendFriendRequest(user.id, user.name);
+        
+        if (result) {
+          successCount++;
+        }
+
+        const delay = this.settings.delay_between_requests || 3000;
+        await sleep(delay + Math.random() * 2000);
+      }
+
+      logger.info('Hoan thanh: ' + successCount + '/' + target + ' loi moi');
+      this.isRunning = false;
+      return successCount > 0;
+    } catch (error) {
+      logger.error('Loi trong auto friend: ' + error.message);
+      this.isRunning = false;
+      return false;
+    }
+  }
+
+  getStats() {
+    return {
+      totalFriends: this.totalFriends,
+      currentSession: this.currentSessionFriends,
+      isRunning: this.isRunning,
+      successRequests: this.successRequests,
+      failedRequests: this.failedRequests
+    };
+  }
+
+  resetStats() {
+    this.currentSessionFriends = 0;
+    this.failedRequests = 0;
+    this.successRequests = 0;
   }
 }
 
-var app = new MainApplication();
-app.mainLoop();
-
-process.on('SIGINT', function() {
-  console.log('\nNhan tin hieu SIGINT');
-  app.stop();
-  setTimeout(function() { process.exit(0); }, 3000);
-});
-
-process.on('SIGTERM', function() {
-  console.log('\nNhan tin hieu SIGTERM');
-  app.stop();
-  setTimeout(function() { process.exit(0); }, 3000);
-});
-
-module.exports = app;
+module.exports = AutoFriend;
