@@ -11,19 +11,27 @@ def get_cookie():
 
 def main():
     cookie_str = get_cookie()
+    if not cookie_str:
+        print("[-] Loi: Chua co cookie trong fb_cookie.txt")
+        return
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+            user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+            viewport={"width": 393, "height": 852},
+            device_scale_factor=3,
+            is_mobile=True,
+            has_touch=True,
+            locale="vi-VN"
         )
         
-        # BỘ LỌC CHẶN HÌNH ẢNH: Chỉ nhận nội dung văn bản, bỏ qua ảnh và video
+        # CHẶN RÁC: Chỉ nhận HTML/Text, không tải ảnh/media
         def block_assets(route):
-            if route.request.resource_type in ["image", "media", "font"]:
+            if route.request.resource_type in ["image", "media", "font", "stylesheet"]:
                 route.abort()
             else:
                 route.continue_()
-        
         context.route("**/*", block_assets)
         
         cookies = [{"name": c.split("=")[0], "value": c.split("=")[1], "domain": ".facebook.com", "path": "/"} 
@@ -32,39 +40,41 @@ def main():
         page = context.new_page()
 
         while True:
-            print("[*] Truy cap trang (Da chan tai anh)...")
+            print("[*] Dang ket noi...")
             try:
+                # Dùng link gợi ý bản mobile
                 page.goto("https://m.facebook.com/friends/center/suggestions/", timeout=60000)
                 page.wait_for_timeout(5000)
                 
-                # Quét nút kết bạn
+                # Tìm tất cả các nút kết bạn (XPath này bao quát mọi thay đổi của FB)
                 buttons = page.locator('//button[contains(text(), "Thêm bạn")] | //a[contains(@href, "/a/friendrequest/")]').all()
                 
                 if not buttons:
-                    print("[-] Chua thay nut. Cuon trang...")
-                    page.mouse.wheel(0, 500)
-                    page.wait_for_timeout(2000)
+                    print("[-] Khong thay nut. Dang cuon trang...")
+                    page.mouse.wheel(0, 800)
+                    page.wait_for_timeout(3000)
                     buttons = page.locator('//button[contains(text(), "Thêm bạn")]').all()
 
-                if not buttons:
-                    print("[-] Het goi y hoac bi chan. Nghi 1 phut...")
+                if buttons:
+                    print(f"[+] Thay {len(buttons)} nguoi. Dang ket ban...")
+                    count = 0
+                    for btn in buttons:
+                        if count >= 20: break
+                        # Giả lập thao tác chạm
+                        btn.dispatch_event('touchstart')
+                        btn.click()
+                        count += 1
+                        print(f"[*] Da gui {count}/20")
+                        time.sleep(random.randint(180, 240)) # 3-4 phút/người
+                else:
+                    print("[-] Chua thay goi y. Nghi 60s...")
                     time.sleep(60)
-                    continue
-                
-                print(f"[+] Phat hien {len(buttons)} muc. Bat dau...")
-                count = 0
-                for btn in buttons:
-                    if count >= 20: break
-                    btn.click()
-                    count += 1
-                    print(f"[*] Da gui loi moi thu {count}/20")
-                    time.sleep(random.randint(180, 240)) # 3-4 phút
-                
+
                 print("[*] Da xong 20 nguoi. Nghi 10 phut...")
                 time.sleep(600)
                 
             except Exception as e:
-                print(f"[-] Loi: {e}. Dang lam moi...")
+                print(f"[-] Loi: {e}. Reset sau 30s...")
                 time.sleep(30)
 
 if __name__ == "__main__":
