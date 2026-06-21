@@ -1,4 +1,4 @@
-cat > setup_token.js << 'EOF'
+cat > switch_to_cookie.js << 'EOF'
 const fs = require('fs');
 const path = require('path');
 
@@ -8,29 +8,14 @@ dirs.forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// TOKEN CỦA BẠN
-const TOKEN = "EAABsbCS1iHgBR4Nb11JVaBLq3WZAKegxnY028UvPej99eS6cvYQT7iWNCfzbRggCD3rpZBlgkObVfbqTXXY2Rq7nM95vEf4p3sZC4jb0VO8jheaQBrrE3N3gdm4lzN2V6u3jVJXbjD6qqECkO8WLpWqcF1ujL0VkFC6RT5n6nWe8OI2h1mpoEGpJM3C4RxZBsOLoAn2t7dBrZBgZDZD";
-
-// FILE 1: config/config.json
-fs.writeFileSync('config/config.json', JSON.stringify({
-  "access_token": TOKEN,
+// FILE 1: config/cookies.json (cookie mới của bạn)
+fs.writeFileSync('config/cookies.json', JSON.stringify({
+  "cookie": "datr=UGE3amn30liW3FU-eHjfctq5;sb=p103ao4lztZXa8fPfHY8F0o7;locale=vi_VN;c_user=61590401439718;fr=1cypgozKiKF0Lh3uH.AWffdA8j3XzJgdOCZOSMUcolzdEZ_jSXxCPzQS3PodofkpqbHZY.BqN5L9..AAA.0.0.BqN5L9.AWfwlbtJI_oKQSGkWBsKgnGd31I;xs=21%3AxIFyPNv9Ql-18Q%3A2%3A1782027002%3A-1%3A-1%3A%3AAcyFT93uXksXUb-6GCQZ9xfcfWuU5znwnaZ9ux3JKQ;wd=1875x925;presence=C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1782027007891%2C%22v%22%3A1%7D",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  "last_updated": new Date().toISOString()
+  "access_token": ""
 }, null, 2));
 
-// FILE 2: config/settings.json
-fs.writeFileSync('config/settings.json', JSON.stringify({
-  "target_friends": 20,
-  "work_duration": 60,
-  "rest_duration": 10,
-  "check_interval": 5,
-  "block_cooldown": 1440,
-  "max_retries": 3,
-  "friend_per_session": 5,
-  "delay_between_requests": 3000
-}, null, 2));
-
-// FILE 3: src/utils.js
+// FILE 2: src/utils.js (dùng cookie)
 fs.writeFileSync('src/utils.js', `const fs = require('fs-extra');
 const path = require('path');
 const winston = require('winston');
@@ -53,20 +38,18 @@ const logger = winston.createLogger({
   ]
 });
 
-function getConfig() {
+function getCookies() {
   try {
-    const config = fs.readJsonSync(path.join(__dirname, '../config/config.json'));
-    return config;
+    return fs.readJsonSync(path.join(__dirname, '../config/cookies.json'));
   } catch (error) {
-    logger.error('Khong the doc config: ' + error.message);
+    logger.error('Khong the doc cookie: ' + error.message);
     return null;
   }
 }
 
 function getSettings() {
   try {
-    const config = fs.readJsonSync(path.join(__dirname, '../config/settings.json'));
-    return config;
+    return fs.readJsonSync(path.join(__dirname, '../config/settings.json'));
   } catch (error) {
     logger.error('Khong the doc settings: ' + error.message);
     return null;
@@ -77,39 +60,15 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function checkInternet() {
-  try {
-    const axios = require('axios');
-    const response = await axios.get('https://graph.facebook.com', { timeout: 5000 });
-    return response.status === 200;
-  } catch {
-    return false;
-  }
-}
+module.exports = { logger, getCookies, getSettings, sleep };`);
 
-function formatTime(timestamp) {
-  const date = new Date(timestamp);
-  return date.toLocaleString('vi-VN', {
-    timeZone: 'Asia/Ho_Chi_Minh'
-  });
-}
-
-module.exports = {
-  logger,
-  getConfig,
-  getSettings,
-  sleep,
-  checkInternet,
-  formatTime
-};`);
-
-// FILE 4: src/check_block.js
+// FILE 3: src/check_block.js
 fs.writeFileSync('src/check_block.js', `const axios = require('axios');
-const { logger, getConfig } = require('./utils');
+const { logger, getCookies } = require('./utils');
 
 class BlockChecker {
   constructor() {
-    this.config = getConfig();
+    this.cookies = getCookies();
     this.isBlocked = false;
     this.blockStartTime = null;
     this.checkCount = 0;
@@ -117,32 +76,27 @@ class BlockChecker {
 
   async checkBlockStatus() {
     this.checkCount++;
-    logger.info('🔍 Kiem tra token lan #' + this.checkCount + '...');
-
+    logger.info('🔍 Kiem tra cookie lan #' + this.checkCount + '...');
     try {
-      const response = await axios.get('https://graph.facebook.com/me', {
-        params: {
-          access_token: this.config.access_token,
-          fields: 'id,name'
+      const response = await axios.get('https://www.facebook.com/me', {
+        headers: {
+          'Cookie': this.cookies.cookie,
+          'User-Agent': this.cookies.user_agent
         },
         timeout: 10000
       });
-
       if (response.data && response.data.id) {
-        logger.info('✅ Token hop le! Tai khoan: ' + response.data.name);
+        logger.info('✅ Cookie hop le! Tai khoan: ' + response.data.name);
         this.isBlocked = false;
         return false;
       }
       return false;
     } catch (error) {
-      if (error.response && error.response.data && error.response.data.error) {
-        const err = error.response.data.error;
-        if (err.code === 190 || err.message.includes('access token')) {
-          logger.error('❌ TOKEN HET HAN! Can cap nhat token moi');
-          this.isBlocked = true;
-          this.blockStartTime = Date.now();
-          return true;
-        }
+      if (error.response && error.response.status === 400) {
+        logger.error('❌ COOKIE HET HAN! Can lay cookie moi');
+        this.isBlocked = true;
+        this.blockStartTime = Date.now();
+        return true;
       }
       logger.warn('⚠️ Loi kiem tra: ' + error.message);
       return false;
@@ -164,7 +118,6 @@ class BlockChecker {
     return {
       isBlocked: this.isBlocked,
       blockStartTime: this.blockStartTime,
-      blockedMinutes: this.blockStartTime ? (Date.now() - this.blockStartTime) / 60000 : 0,
       checkCount: this.checkCount
     };
   }
@@ -176,13 +129,13 @@ class BlockChecker {
 
 module.exports = BlockChecker;`);
 
-// FILE 5: src/auto_friend.js
+// FILE 4: src/auto_friend.js
 fs.writeFileSync('src/auto_friend.js', `const axios = require('axios');
-const { logger, getConfig, getSettings, sleep } = require('./utils');
+const { logger, getCookies, getSettings, sleep } = require('./utils');
 
 class AutoFriend {
   constructor() {
-    this.config = getConfig();
+    this.cookies = getCookies();
     this.settings = getSettings();
     this.totalFriends = 0;
     this.currentSessionFriends = 0;
@@ -194,11 +147,13 @@ class AutoFriend {
   async sendFriendRequest(userId, userName = 'Unknown') {
     try {
       const response = await axios.post(
-        'https://graph.facebook.com/' + userId + '/friends',
+        'https://www.facebook.com/' + userId + '/friends',
         {},
         {
-          params: {
-            access_token: this.config.access_token
+          headers: {
+            'Cookie': this.cookies.cookie,
+            'User-Agent': this.cookies.user_agent,
+            'Content-Type': 'application/json'
           },
           timeout: 15000
         }
@@ -219,43 +174,21 @@ class AutoFriend {
     }
   }
 
-  async getCurrentFriends() {
-    try {
-      const response = await axios.get('https://graph.facebook.com/me/friends', {
-        params: {
-          access_token: this.config.access_token,
-          limit: 100,
-          fields: 'id,name'
-        },
-        timeout: 10000
-      });
-      return response.data.data || [];
-    } catch (error) {
-      logger.error('❌ Lay danh sach ban be that bai: ' + error.message);
-      return [];
-    }
-  }
-
   async getSuggestedUsers() {
     try {
-      const currentFriends = await this.getCurrentFriends();
-      const friendIds = new Set(currentFriends.map(f => f.id));
-      
-      const response = await axios.get('https://graph.facebook.com/me/friends', {
-        params: {
-          access_token: this.config.access_token,
-          limit: 50,
-          fields: 'id,name'
+      const response = await axios.get('https://www.facebook.com/me/friends', {
+        headers: {
+          'Cookie': this.cookies.cookie,
+          'User-Agent': this.cookies.user_agent
         },
+        params: { limit: 50 },
         timeout: 10000
       });
-      
-      const suggested = response.data.data || [];
-      const filtered = suggested.filter(user => !friendIds.has(user.id));
-      logger.info('📋 Tim thay ' + filtered.length + ' nguoi dung de xuat');
-      return filtered;
+      const data = response.data.data || [];
+      logger.info('📋 Tim thay ' + data.length + ' nguoi dung');
+      return data;
     } catch (error) {
-      logger.error('❌ Lay danh sach de xuat that bai: ' + error.message);
+      logger.error('❌ Lay danh sach that bai: ' + error.message);
       return [];
     }
   }
@@ -269,11 +202,10 @@ class AutoFriend {
     this.currentSessionFriends = 0;
     this.failedRequests = 0;
     this.successRequests = 0;
-    
     try {
       const users = await this.getSuggestedUsers();
       if (users.length === 0) {
-        logger.warn('⚠️ Khong tim thay nguoi dung de ket ban');
+        logger.warn('⚠️ Khong tim thay nguoi dung');
         this.isRunning = false;
         return false;
       }
@@ -314,7 +246,7 @@ class AutoFriend {
 
 module.exports = AutoFriend;`);
 
-// FILE 6: src/schedule_manager.js
+// FILE 5: src/schedule_manager.js
 fs.writeFileSync('src/schedule_manager.js', `const { logger, getSettings, sleep } = require('./utils');
 
 class ScheduleManager {
@@ -324,8 +256,6 @@ class ScheduleManager {
     this.workEndTime = null;
     this.isResting = false;
     this.cycleCount = 0;
-    this.totalWorkTime = 0;
-    this.totalRestTime = 0;
   }
 
   startWorkCycle() {
@@ -367,8 +297,8 @@ class ScheduleManager {
 
 module.exports = ScheduleManager;`);
 
-// FILE 7: src/main.js
-fs.writeFileSync('src/main.js', `const { logger, getConfig, getSettings, sleep, checkInternet } = require('./utils');
+// FILE 6: src/main.js
+fs.writeFileSync('src/main.js', `const { logger, getCookies, getSettings, sleep } = require('./utils');
 const BlockChecker = require('./check_block');
 const AutoFriend = require('./auto_friend');
 const ScheduleManager = require('./schedule_manager');
@@ -376,7 +306,7 @@ const ScheduleManager = require('./schedule_manager');
 class MainApplication {
   constructor() {
     this.settings = getSettings();
-    this.config = getConfig();
+    this.cookies = getCookies();
     this.blockChecker = new BlockChecker();
     this.autoFriend = new AutoFriend();
     this.scheduleManager = new ScheduleManager();
@@ -387,23 +317,16 @@ class MainApplication {
 
   async initialize() {
     console.log('\\n' + '='.repeat(60));
-    logger.info('🚀 KHOI DONG HE THONG AUTO FRIEND (TOKEN)');
+    logger.info('🚀 AUTO FRIEND (QUA WEB - COOKIE)');
     console.log('='.repeat(60));
     logger.info('📋 Muc tieu: ' + this.settings.target_friends + ' ban/ngay');
-    logger.info('⏱️ Chu ky: ' + this.settings.work_duration + ' phut lam viec / ' + this.settings.rest_duration + ' phut nghi');
     console.log('='.repeat(60) + '\\n');
 
-    if (!await checkInternet()) {
-      logger.error('❌ Khong co ket noi Internet');
+    if (!this.cookies || !this.cookies.cookie) {
+      logger.error('❌ Cookie khong hop le');
       process.exit(1);
     }
-    logger.info('✅ Ket noi Internet OK');
-
-    if (!this.config || !this.config.access_token) {
-      logger.error('❌ Token khong hop le');
-      process.exit(1);
-    }
-    logger.info('✅ Token OK');
+    logger.info('✅ Cookie OK');
   }
 
   async mainLoop() {
@@ -411,13 +334,13 @@ class MainApplication {
     while (this.isRunning) {
       try {
         logger.info('\\n' + '-'.repeat(40));
-        logger.info('🔍 BUOC 1: KIEM TRA TOKEN');
+        logger.info('🔍 BUOC 1: KIEM TRA COOKIE');
         logger.info('-'.repeat(40));
         
         const isBlocked = await this.blockChecker.checkBlockStatus();
         
         if (isBlocked) {
-          logger.warn('⚠️ TOKEN HET HAN HOAC BI CHAN!');
+          logger.warn('⚠️ COOKIE HET HAN!');
           this.isBlocked = true;
           logger.info('⏳ Dung he thong 24 gio...');
           await sleep(1440 * 60 * 1000);
@@ -504,53 +427,16 @@ process.on('SIGTERM', function() {
 
 module.exports = app;`);
 
-// FILE 8: package.json
-fs.writeFileSync('package.json', JSON.stringify({
-  "name": "fb-auto-friend",
-  "version": "1.0.0",
-  "description": "Auto friend Facebook with Token",
-  "main": "src/main.js",
-  "scripts": {
-    "start": "node src/main.js",
-    "pm2-start": "pm2 start ecosystem.config.js",
-    "pm2-stop": "pm2 stop fb-auto-friend",
-    "pm2-restart": "pm2 restart fb-auto-friend",
-    "pm2-logs": "pm2 logs fb-auto-friend",
-    "pm2-status": "pm2 status"
-  },
-  "dependencies": {
-    "axios": "^1.6.0",
-    "fs-extra": "^11.1.0",
-    "moment": "^2.29.4",
-    "winston": "^3.11.0"
-  }
+// FILE 7: config/settings.json
+fs.writeFileSync('config/settings.json', JSON.stringify({
+  "target_friends": 20,
+  "work_duration": 60,
+  "rest_duration": 10,
+  "friend_per_session": 5,
+  "delay_between_requests": 3000
 }, null, 2));
 
-// FILE 9: ecosystem.config.js
-fs.writeFileSync('ecosystem.config.js', `module.exports = {
-  apps: [{
-    name: 'fb-auto-friend',
-    script: './src/main.js',
-    instances: 1,
-    exec_mode: 'fork',
-    watch: false,
-    max_memory_restart: '200M',
-    error_file: './logs/pm2-error.log',
-    out_file: './logs/pm2-out.log',
-    log_file: './logs/pm2-combined.log',
-    time: true,
-    autorestart: true,
-    restart_delay: 10000,
-    max_restarts: 10,
-    min_uptime: '10s',
-    kill_timeout: 3000,
-    env: {
-      NODE_ENV: 'production'
-    }
-  }]
-};`);
-
-console.log('✅ DA CHUYEN DOI SANG TOKEN THANH CONG!');
-console.log('📁 Token: ' + TOKEN.substring(0, 20) + '...');
-console.log('🚀 Chay lenh: npm install && node src/main.js');
+console.log('✅ DA CHUYEN TU TOKEN SANG COOKIE THANH CONG!');
+console.log('📌 Cookie da duoc luu trong config/cookies.json');
+console.log('🚀 Chay: node src/main.js');
 EOF
