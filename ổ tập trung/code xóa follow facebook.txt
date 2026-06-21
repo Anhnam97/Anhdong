@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import time, random
 from playwright.sync_api import sync_playwright
+from playwright_stealth import stealth_sync
 
 COOKIE_FILE = "fb_cookie.txt"
 
@@ -11,70 +12,51 @@ def get_cookie():
 
 def main():
     cookie_str = get_cookie()
-    if not cookie_str:
-        print("[-] Loi: Chua co cookie trong fb_cookie.txt")
-        return
-
     with sync_playwright() as p:
+        # Cấu hình trình duyệt với Profile di động thật
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
             user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
             viewport={"width": 393, "height": 852},
             device_scale_factor=3,
             is_mobile=True,
-            has_touch=True,
-            locale="vi-VN"
+            has_touch=True
         )
         
-        # CHẶN RÁC: Chỉ nhận HTML/Text, không tải ảnh/media
-        def block_assets(route):
-            if route.request.resource_type in ["image", "media", "font", "stylesheet"]:
-                route.abort()
-            else:
-                route.continue_()
-        context.route("**/*", block_assets)
+        page = context.new_page()
+        # Áp dụng công nghệ Stealth (Ẩn dấu vết robot)
+        stealth_sync(page)
         
+        # Nạp Cookie
         cookies = [{"name": c.split("=")[0], "value": c.split("=")[1], "domain": ".facebook.com", "path": "/"} 
                    for c in cookie_str.split(";") if "=" in c]
         context.add_cookies(cookies)
-        page = context.new_page()
 
         while True:
             print("[*] Dang ket noi...")
             try:
-                # Dùng link gợi ý bản mobile
                 page.goto("https://m.facebook.com/friends/center/suggestions/", timeout=60000)
                 page.wait_for_timeout(5000)
                 
-                # Tìm tất cả các nút kết bạn (XPath này bao quát mọi thay đổi của FB)
+                # Tìm nút bằng nhiều cách (XPath đa dạng)
                 buttons = page.locator('//button[contains(text(), "Thêm bạn")] | //a[contains(@href, "/a/friendrequest/")]').all()
                 
                 if not buttons:
-                    print("[-] Khong thay nut. Dang cuon trang...")
+                    # Nếu không thấy nút, hãy ép Facebook tin rằng chúng ta đang lướt thật
                     page.mouse.wheel(0, 800)
                     page.wait_for_timeout(3000)
                     buttons = page.locator('//button[contains(text(), "Thêm bạn")]').all()
 
                 if buttons:
-                    print(f"[+] Thay {len(buttons)} nguoi. Dang ket ban...")
-                    count = 0
-                    for btn in buttons:
-                        if count >= 20: break
-                        # Giả lập thao tác chạm
-                        btn.dispatch_event('touchstart')
+                    for btn in buttons[:10]: # Mỗi lần chỉ làm 10 người cho an toàn
                         btn.click()
-                        count += 1
-                        print(f"[*] Da gui {count}/20")
-                        time.sleep(random.randint(180, 240)) # 3-4 phút/người
+                        print("[*] Da gui loi moi...")
+                        time.sleep(random.randint(120, 180)) 
                 else:
-                    print("[-] Chua thay goi y. Nghi 60s...")
-                    time.sleep(60)
-
-                print("[*] Da xong 20 nguoi. Nghi 10 phut...")
-                time.sleep(600)
-                
+                    print("[-] Khong thay nut. Nick co the dang bi Facebook han che tinh nang nay.")
+                    time.sleep(300)
             except Exception as e:
-                print(f"[-] Loi: {e}. Reset sau 30s...")
+                print(f"[-] Loi: {e}")
                 time.sleep(30)
 
 if __name__ == "__main__":
