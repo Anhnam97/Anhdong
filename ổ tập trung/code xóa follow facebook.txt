@@ -1,21 +1,24 @@
-cat > fix_all.js << 'EOF'
+cat > setup_token.js << 'EOF'
 const fs = require('fs');
 const path = require('path');
 
-// Tạo thư mục nếu chưa có
+// Tạo thư mục
 const dirs = ['config', 'src', 'logs'];
 dirs.forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// File 1: config/cookies.json
-fs.writeFileSync('config/cookies.json', JSON.stringify({
-  "cookie": "c_user=61590401439718; datr=UGE3amn30liW3FU-eHjfctq5; fr=1ekFndRraQvO6YvzU.AWdrt9DG7UxpCqLgIrwysSJdXY2If6kdL4fIROwJMdcAMeEbROo.BqN2Fh..AAA.0.0.BqN2bO.AWeanjUl30s_2oGfcyE5VDOa1Ik; presence=C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1782015704364%2C%22v%22%3A1%7D; sb=p103ao4lztZXa8fPfHY8F0o7; wd=920x925; xs=48%3Ar4d_0sr7rLYHmg%3A2%3A1782014301%3A-1%3A-1%3A%3AAczbADbG4eIMdWAbFC1PAd9JDTCm9IdNBYlkXGLkPQ",
+// TOKEN CỦA BẠN
+const TOKEN = "EAABsbCS1iHgBR4Nb11JVaBLq3WZAKegxnY028UvPej99eS6cvYQT7iWNCfzbRggCD3rpZBlgkObVfbqTXXY2Rq7nM95vEf4p3sZC4jb0VO8jheaQBrrE3N3gdm4lzN2V6u3jVJXbjD6qqECkO8WLpWqcF1ujL0VkFC6RT5n6nWe8OI2h1mpoEGpJM3C4RxZBsOLoAn2t7dBrZBgZDZD";
+
+// FILE 1: config/config.json
+fs.writeFileSync('config/config.json', JSON.stringify({
+  "access_token": TOKEN,
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  "access_token": ""
+  "last_updated": new Date().toISOString()
 }, null, 2));
 
-// File 2: config/settings.json
+// FILE 2: config/settings.json
 fs.writeFileSync('config/settings.json', JSON.stringify({
   "target_friends": 20,
   "work_duration": 60,
@@ -27,7 +30,7 @@ fs.writeFileSync('config/settings.json', JSON.stringify({
   "delay_between_requests": 3000
 }, null, 2));
 
-// File 3: src/utils.js
+// FILE 3: src/utils.js
 fs.writeFileSync('src/utils.js', `const fs = require('fs-extra');
 const path = require('path');
 const winston = require('winston');
@@ -50,12 +53,12 @@ const logger = winston.createLogger({
   ]
 });
 
-function getCookies() {
+function getConfig() {
   try {
-    const config = fs.readJsonSync(path.join(__dirname, '../config/cookies.json'));
+    const config = fs.readJsonSync(path.join(__dirname, '../config/config.json'));
     return config;
   } catch (error) {
-    logger.error('Khong the doc cookie: ' + error.message);
+    logger.error('Khong the doc config: ' + error.message);
     return null;
   }
 }
@@ -77,7 +80,7 @@ function sleep(ms) {
 async function checkInternet() {
   try {
     const axios = require('axios');
-    const response = await axios.get('https://www.facebook.com', { timeout: 5000 });
+    const response = await axios.get('https://graph.facebook.com', { timeout: 5000 });
     return response.status === 200;
   } catch {
     return false;
@@ -93,20 +96,20 @@ function formatTime(timestamp) {
 
 module.exports = {
   logger,
-  getCookies,
+  getConfig,
   getSettings,
   sleep,
   checkInternet,
   formatTime
 };`);
 
-// File 4: src/check_block.js
+// FILE 4: src/check_block.js
 fs.writeFileSync('src/check_block.js', `const axios = require('axios');
-const { logger, getCookies } = require('./utils');
+const { logger, getConfig } = require('./utils');
 
 class BlockChecker {
   constructor() {
-    this.cookies = getCookies();
+    this.config = getConfig();
     this.isBlocked = false;
     this.blockStartTime = null;
     this.checkCount = 0;
@@ -114,29 +117,28 @@ class BlockChecker {
 
   async checkBlockStatus() {
     this.checkCount++;
-    logger.info('🔍 Kiem tra chan lan #' + this.checkCount + '...');
+    logger.info('🔍 Kiem tra token lan #' + this.checkCount + '...');
 
     try {
-      const response = await axios.get('https://www.facebook.com/me', {
-        params: { fields: 'id,name' },
-        headers: {
-          'Cookie': this.cookies.cookie,
-          'User-Agent': this.cookies.user_agent
+      const response = await axios.get('https://graph.facebook.com/me', {
+        params: {
+          access_token: this.config.access_token,
+          fields: 'id,name'
         },
         timeout: 10000
       });
 
       if (response.data && response.data.id) {
-        logger.info('✅ Tai khoan hoat dong binh thuong');
+        logger.info('✅ Token hop le! Tai khoan: ' + response.data.name);
         this.isBlocked = false;
         return false;
       }
       return false;
     } catch (error) {
-      if (error.response) {
-        const status = error.response.status;
-        if (status === 403 || status === 401) {
-          logger.error('❌ PHAT HIEN BI CHAN!');
+      if (error.response && error.response.data && error.response.data.error) {
+        const err = error.response.data.error;
+        if (err.code === 190 || err.message.includes('access token')) {
+          logger.error('❌ TOKEN HET HAN! Can cap nhat token moi');
           this.isBlocked = true;
           this.blockStartTime = Date.now();
           return true;
@@ -150,19 +152,12 @@ class BlockChecker {
   isCooldownComplete(cooldownMinutes = 1440) {
     if (!this.isBlocked || !this.blockStartTime) return true;
     const elapsedMinutes = (Date.now() - this.blockStartTime) / (1000 * 60);
-    const isComplete = elapsedMinutes >= cooldownMinutes;
-    if (isComplete) {
-      logger.info('✅ Da het thoi gian chan');
+    if (elapsedMinutes >= cooldownMinutes) {
       this.isBlocked = false;
       this.blockStartTime = null;
       return true;
-    } else {
-      const remaining = Math.ceil(cooldownMinutes - elapsedMinutes);
-      const hours = Math.floor(remaining / 60);
-      const minutes = remaining % 60;
-      logger.info('⏳ Con ' + hours + 'h' + minutes + ' phut nua moi het chan');
-      return false;
     }
+    return false;
   }
 
   getBlockStatus() {
@@ -181,13 +176,13 @@ class BlockChecker {
 
 module.exports = BlockChecker;`);
 
-// File 5: src/auto_friend.js
+// FILE 5: src/auto_friend.js
 fs.writeFileSync('src/auto_friend.js', `const axios = require('axios');
-const { logger, getCookies, getSettings, sleep } = require('./utils');
+const { logger, getConfig, getSettings, sleep } = require('./utils');
 
 class AutoFriend {
   constructor() {
-    this.cookies = getCookies();
+    this.config = getConfig();
     this.settings = getSettings();
     this.totalFriends = 0;
     this.currentSessionFriends = 0;
@@ -199,13 +194,11 @@ class AutoFriend {
   async sendFriendRequest(userId, userName = 'Unknown') {
     try {
       const response = await axios.post(
-        'https://www.facebook.com/' + userId + '/friends',
+        'https://graph.facebook.com/' + userId + '/friends',
         {},
         {
-          headers: {
-            'Cookie': this.cookies.cookie,
-            'User-Agent': this.cookies.user_agent,
-            'Content-Type': 'application/json'
+          params: {
+            access_token: this.config.access_token
           },
           timeout: 15000
         }
@@ -228,11 +221,11 @@ class AutoFriend {
 
   async getCurrentFriends() {
     try {
-      const response = await axios.get('https://www.facebook.com/me/friends', {
-        params: { limit: 100, fields: 'id,name' },
-        headers: {
-          'Cookie': this.cookies.cookie,
-          'User-Agent': this.cookies.user_agent
+      const response = await axios.get('https://graph.facebook.com/me/friends', {
+        params: {
+          access_token: this.config.access_token,
+          limit: 100,
+          fields: 'id,name'
         },
         timeout: 10000
       });
@@ -247,14 +240,16 @@ class AutoFriend {
     try {
       const currentFriends = await this.getCurrentFriends();
       const friendIds = new Set(currentFriends.map(f => f.id));
-      const response = await axios.get('https://www.facebook.com/me/friends', {
-        params: { limit: 50, fields: 'id,name' },
-        headers: {
-          'Cookie': this.cookies.cookie,
-          'User-Agent': this.cookies.user_agent
+      
+      const response = await axios.get('https://graph.facebook.com/me/friends', {
+        params: {
+          access_token: this.config.access_token,
+          limit: 50,
+          fields: 'id,name'
         },
         timeout: 10000
       });
+      
       const suggested = response.data.data || [];
       const filtered = suggested.filter(user => !friendIds.has(user.id));
       logger.info('📋 Tim thay ' + filtered.length + ' nguoi dung de xuat');
@@ -274,6 +269,7 @@ class AutoFriend {
     this.currentSessionFriends = 0;
     this.failedRequests = 0;
     this.successRequests = 0;
+    
     try {
       const users = await this.getSuggestedUsers();
       if (users.length === 0) {
@@ -287,8 +283,7 @@ class AutoFriend {
         const user = users[i];
         const result = await this.sendFriendRequest(user.id, user.name);
         if (result) successCount++;
-        const delay = this.settings.delay_between_requests || 3000;
-        await sleep(delay + Math.random() * 2000);
+        await sleep(3000 + Math.random() * 2000);
       }
       logger.info('✅ Hoan thanh: ' + successCount + '/' + target + ' loi moi');
       this.isRunning = false;
@@ -319,7 +314,7 @@ class AutoFriend {
 
 module.exports = AutoFriend;`);
 
-// File 6: src/schedule_manager.js
+// FILE 6: src/schedule_manager.js
 fs.writeFileSync('src/schedule_manager.js', `const { logger, getSettings, sleep } = require('./utils');
 
 class ScheduleManager {
@@ -339,19 +334,15 @@ class ScheduleManager {
     const workDuration = (this.settings.work_duration || 60) * 60 * 1000;
     this.workEndTime = this.workStartTime + workDuration;
     this.isResting = false;
-    const minutes = Math.floor(workDuration / 60000);
-    logger.info('🚀 Bat dau chu ky lam viec #' + this.cycleCount + ' (' + minutes + ' phut)');
+    logger.info('🚀 Bat dau chu ky lam viec #' + this.cycleCount);
   }
 
   async startRestCycle() {
     this.isResting = true;
     const restDuration = (this.settings.rest_duration || 10) * 60 * 1000;
-    this.totalRestTime += restDuration;
-    const minutes = Math.floor(restDuration / 60000);
-    logger.info('☕ Bat dau nghi ngoi (' + minutes + ' phut)');
+    logger.info('☕ Nghi ngoi ' + (this.settings.rest_duration || 10) + ' phut');
     await sleep(restDuration);
     this.isResting = false;
-    this.totalWorkTime += (this.workEndTime - this.workStartTime);
     logger.info('✅ Ket thuc nghi ngoi');
   }
 
@@ -362,36 +353,22 @@ class ScheduleManager {
 
   getRemainingWorkTime() {
     if (!this.workEndTime) return 0;
-    const remaining = Math.max(0, (this.workEndTime - Date.now()) / 60000);
-    return Math.ceil(remaining);
+    return Math.ceil(Math.max(0, (this.workEndTime - Date.now()) / 60000));
   }
 
   getStatus() {
     return {
       isResting: this.isResting,
-      workStartTime: this.workStartTime,
-      workEndTime: this.workEndTime,
       remainingMinutes: this.getRemainingWorkTime(),
-      cycleCount: this.cycleCount,
-      totalWorkTime: this.totalWorkTime,
-      totalRestTime: this.totalRestTime
+      cycleCount: this.cycleCount
     };
-  }
-
-  reset() {
-    this.workStartTime = null;
-    this.workEndTime = null;
-    this.isResting = false;
-    this.cycleCount = 0;
-    this.totalWorkTime = 0;
-    this.totalRestTime = 0;
   }
 }
 
 module.exports = ScheduleManager;`);
 
-// File 7: src/main.js
-fs.writeFileSync('src/main.js', `const { logger, getSettings, sleep, checkInternet } = require('./utils');
+// FILE 7: src/main.js
+fs.writeFileSync('src/main.js', `const { logger, getConfig, getSettings, sleep, checkInternet } = require('./utils');
 const BlockChecker = require('./check_block');
 const AutoFriend = require('./auto_friend');
 const ScheduleManager = require('./schedule_manager');
@@ -399,6 +376,7 @@ const ScheduleManager = require('./schedule_manager');
 class MainApplication {
   constructor() {
     this.settings = getSettings();
+    this.config = getConfig();
     this.blockChecker = new BlockChecker();
     this.autoFriend = new AutoFriend();
     this.scheduleManager = new ScheduleManager();
@@ -409,21 +387,23 @@ class MainApplication {
 
   async initialize() {
     console.log('\\n' + '='.repeat(60));
-    logger.info('🚀 KHOI DONG HE THONG AUTO FRIEND');
+    logger.info('🚀 KHOI DONG HE THONG AUTO FRIEND (TOKEN)');
     console.log('='.repeat(60));
     logger.info('📋 Muc tieu: ' + this.settings.target_friends + ' ban/ngay');
     logger.info('⏱️ Chu ky: ' + this.settings.work_duration + ' phut lam viec / ' + this.settings.rest_duration + ' phut nghi');
     console.log('='.repeat(60) + '\\n');
+
     if (!await checkInternet()) {
       logger.error('❌ Khong co ket noi Internet');
       process.exit(1);
     }
     logger.info('✅ Ket noi Internet OK');
-    if (!this.blockChecker.cookies || !this.blockChecker.cookies.cookie) {
-      logger.error('❌ Cookie khong hop le');
+
+    if (!this.config || !this.config.access_token) {
+      logger.error('❌ Token khong hop le');
       process.exit(1);
     }
-    logger.info('✅ Cookie OK');
+    logger.info('✅ Token OK');
   }
 
   async mainLoop() {
@@ -431,51 +411,31 @@ class MainApplication {
     while (this.isRunning) {
       try {
         logger.info('\\n' + '-'.repeat(40));
-        logger.info('🔍 BUOC 1: KIEM TRA TRANG THAI CHAN');
+        logger.info('🔍 BUOC 1: KIEM TRA TOKEN');
         logger.info('-'.repeat(40));
+        
         const isBlocked = await this.blockChecker.checkBlockStatus();
+        
         if (isBlocked) {
-          logger.warn('⚠️ PHAT HIEN BI CHAN!');
+          logger.warn('⚠️ TOKEN HET HAN HOAC BI CHAN!');
           this.isBlocked = true;
-          const cooldown = this.settings.block_cooldown || 1440;
-          logger.info('⏳ Dung he thong ' + cooldown + ' phut (24 gio)');
-          const waitEnd = Date.now() + cooldown * 60 * 1000;
-          while (Date.now() < waitEnd && this.isRunning) {
-            const remaining = Math.ceil((waitEnd - Date.now()) / 60000);
-            const hours = Math.floor(remaining / 60);
-            const minutes = remaining % 60;
-            logger.info('⏳ Con ' + hours + 'h' + minutes + ' phut cho');
-            await sleep(600000);
-          }
+          logger.info('⏳ Dung he thong 24 gio...');
+          await sleep(1440 * 60 * 1000);
           if (!this.isRunning) break;
-          logger.info('🔄 Kiem tra lai sau 24 gio...');
-          const isStillBlocked = await this.blockChecker.checkBlockStatus();
-          if (isStillBlocked) {
-            logger.error('❌ Van bi chan, dung he thong!');
-            this.isRunning = false;
-            break;
-          } else {
-            logger.info('✅ Da het chan, tiep tuc hoat dong');
-            this.isBlocked = false;
-            this.blockChecker.resetCheckCount();
-            continue;
-          }
+          continue;
         }
+
         if (!this.isBlocked) {
           logger.info('\\n' + '-'.repeat(40));
           logger.info('🎯 BUOC 2: TU DONG KET BAN');
           logger.info('-'.repeat(40));
+          
           this.scheduleManager.startWorkCycle();
           let cycleComplete = false;
           const friendPerSession = this.settings.friend_per_session || 5;
           const targetTotal = this.settings.target_friends || 20;
+          
           while (this.scheduleManager.isWorkTimeRemaining() && this.isRunning) {
-            const checkBlock = await this.blockChecker.checkBlockStatus();
-            if (checkBlock) {
-              logger.warn('⚠️ Phat hien bi chan giua chung!');
-              this.isBlocked = true;
-              break;
-            }
             const currentTotal = this.autoFriend.getStats().totalFriends;
             const remainingTarget = targetTotal - currentTotal;
             if (remainingTarget <= 0) {
@@ -488,36 +448,33 @@ class MainApplication {
             const stats = this.autoFriend.getStats();
             logger.info('📊 Thong ke: Tong ' + stats.totalFriends + ' ban');
             if (stats.totalFriends >= targetTotal) {
-              logger.info('🎉 HOAN THANH MUC TIEU ' + targetTotal + ' BAN!');
+              logger.info('🎉 HOAN THANH MUC TIEU!');
               cycleComplete = true;
               break;
             }
-            logger.info('⏳ Nghi 30 giay truoc phien tiep theo...');
+            logger.info('⏳ Nghi 30 giay...');
             await sleep(30000);
           }
+
           if (!this.isBlocked && !cycleComplete) {
             logger.info('\\n' + '-'.repeat(40));
             logger.info('☕ BUOC 3: NGHI NGOI');
             logger.info('-'.repeat(40));
             await this.scheduleManager.startRestCycle();
-            const checkBlockAfterRest = await this.blockChecker.checkBlockStatus();
-            if (checkBlockAfterRest) {
-              this.isBlocked = true;
-            }
           }
         }
+
         console.log('\\n' + '='.repeat(60));
         logger.info('📊 TRANG THAI HE THONG');
         console.log('='.repeat(60));
-        const blockStatus = this.blockChecker.getBlockStatus();
         const friendStats = this.autoFriend.getStats();
         const scheduleStatus = this.scheduleManager.getStatus();
-        logger.info('🔒 Chan: ' + (blockStatus.isBlocked ? 'CO' : 'KHONG'));
         logger.info('👥 Tong ban: ' + friendStats.totalFriends);
         logger.info('🔄 Chu ky: ' + scheduleStatus.cycleCount);
         console.log('='.repeat(60) + '\\n');
+
       } catch (error) {
-        logger.error('❌ Loi trong main loop: ' + error.message);
+        logger.error('❌ Loi: ' + error.message);
         await sleep(60000);
       }
     }
@@ -526,7 +483,7 @@ class MainApplication {
 
   stop() {
     this.isRunning = false;
-    logger.info('🛑 Dang dung he thong...');
+    logger.info('🛑 Dang dung...');
   }
 }
 
@@ -534,24 +491,24 @@ const app = new MainApplication();
 app.mainLoop();
 
 process.on('SIGINT', function() {
-  console.log('\\n⚠️ Nhan tin hieu SIGINT');
+  console.log('\\n⚠️ Nhan SIGINT');
   app.stop();
   setTimeout(function() { process.exit(0); }, 3000);
 });
 
 process.on('SIGTERM', function() {
-  console.log('\\n⚠️ Nhan tin hieu SIGTERM');
+  console.log('\\n⚠️ Nhan SIGTERM');
   app.stop();
   setTimeout(function() { process.exit(0); }, 3000);
 });
 
 module.exports = app;`);
 
-// File 8: package.json
+// FILE 8: package.json
 fs.writeFileSync('package.json', JSON.stringify({
   "name": "fb-auto-friend",
   "version": "1.0.0",
-  "description": "Auto friend Facebook on Pi Zero",
+  "description": "Auto friend Facebook with Token",
   "main": "src/main.js",
   "scripts": {
     "start": "node src/main.js",
@@ -569,7 +526,7 @@ fs.writeFileSync('package.json', JSON.stringify({
   }
 }, null, 2));
 
-// File 9: ecosystem.config.js
+// FILE 9: ecosystem.config.js
 fs.writeFileSync('ecosystem.config.js', `module.exports = {
   apps: [{
     name: 'fb-auto-friend',
@@ -593,8 +550,7 @@ fs.writeFileSync('ecosystem.config.js', `module.exports = {
   }]
 };`);
 
-console.log('✅ TẤT CẢ FILE ĐÃ ĐƯỢC GHI ĐÈ!');
-console.log('📁 Số file đã tạo:', fs.readdirSync('.').length);
-console.log('📂 Folder: config, src, logs');
-console.log('🚀 Chạy lệnh: npm install && node src/main.js');
+console.log('✅ DA CHUYEN DOI SANG TOKEN THANH CONG!');
+console.log('📁 Token: ' + TOKEN.substring(0, 20) + '...');
+console.log('🚀 Chay lenh: npm install && node src/main.js');
 EOF
