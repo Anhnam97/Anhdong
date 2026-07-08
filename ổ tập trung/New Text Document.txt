@@ -129,12 +129,12 @@ function updateTrialDefaultIfNeeded(array $account): array
     return getAccount($account['uid']);
 }
 
-// ===================== SỬA Ở ĐÂY =====================
-// Hàm này quyết định dữ liệu trả về cho extension.
-// Bây giờ nó luôn trả về VIP vô hạn.
+// ===================== CHỈ SỬA HÀM NÀY =====================
+// Hàm publicAccount quyết định dữ liệu trả về cho extension.
+// Giờ đây nó luôn trả về VIP vô hạn mà không cần quan tâm database.
 function publicAccount(array $account): array
 {
-    // BYPASS: luôn trả về VIP với số lượt khủng và thời hạn xa vô tận
+    // BYPASS: luôn trả về VIP vô hạn
     return [
         'uid' => $account['uid'],
         'type' => 'vip',
@@ -142,8 +142,7 @@ function publicAccount(array $account): array
         'endTime' => 9999999999 // năm 2286, không bao giờ hết
     ];
 
-    // Nếu muốn giữ code cũ để tham khảo, comment lại:
-    /*
+    /* Code gốc (giữ nguyên để tham khảo, có thể bỏ comment nếu muốn khôi phục)
     $type = $account['type'] ?? 'trial';
     return [
         'uid' => $account['uid'],
@@ -153,7 +152,7 @@ function publicAccount(array $account): array
     ];
     */
 }
-// =====================================================
+// =============================================================
 
 function addLog(string $message): void
 {
