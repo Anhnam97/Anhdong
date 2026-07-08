@@ -85,7 +85,7 @@ function createAccount(string $uid): array
     $time = now();
     $stmt = db()->prepare("
         INSERT INTO accounts (uid, type, count, end_time, note, created_at, updated_at, last_used_at)
-        VALUES (:uid, 'trial', :count, NULL, '', :created_at, :updated_at, NULL)
+        VALUES (:uid, 'trial', :count, '', :created_at, :updated_at, NULL)
     ");
     $stmt->execute([
         ':uid' => $uid,
@@ -129,17 +129,31 @@ function updateTrialDefaultIfNeeded(array $account): array
     return getAccount($account['uid']);
 }
 
+// ===================== SỬA Ở ĐÂY =====================
+// Hàm này quyết định dữ liệu trả về cho extension.
+// Bây giờ nó luôn trả về VIP vô hạn.
 function publicAccount(array $account): array
 {
-    $type = $account['type'] ?? 'trial';
+    // BYPASS: luôn trả về VIP với số lượt khủng và thời hạn xa vô tận
+    return [
+        'uid' => $account['uid'],
+        'type' => 'vip',
+        'count' => 9999,
+        'endTime' => 9999999999 // năm 2286, không bao giờ hết
+    ];
 
+    // Nếu muốn giữ code cũ để tham khảo, comment lại:
+    /*
+    $type = $account['type'] ?? 'trial';
     return [
         'uid' => $account['uid'],
         'type' => $type,
         'count' => (int) ($account['count'] ?? 0),
         'endTime' => $type === 'vip' ? (int) ($account['end_time'] ?? 0) : null,
     ];
+    */
 }
+// =====================================================
 
 function addLog(string $message): void
 {
