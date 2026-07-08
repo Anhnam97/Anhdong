@@ -1,166 +1,1120 @@
-// ===== Lấy DOM =====
-const mainPanel = document.getElementById('mainPanel');
-const stopPanel = document.getElementById('stopPanel');
-const progressFill = document.getElementById('progressFill');
-const progressText = document.getElementById('progressText');
-const percentText = document.getElementById('percentText');
-const remainCount = document.getElementById('remainCount');
-const sentDisplay = document.getElementById('sentDisplay');
-const sentStat = document.getElementById('sentStat');
-const skippedStat = document.getElementById('skippedStat');
-const targetStat = document.getElementById('targetStat');
-const configGender = document.getElementById('configGender');
-const configMutual = document.getElementById('configMutual');
-const configDelay = document.getElementById('configDelay');
-const activityLog = document.getElementById('activityLog');
-const liveBadge = document.getElementById('liveBadge');
+export function sendToContentScript(event, data) {
+  return new Promise((resolve, reject) => {
+    let uuid = Math.random().toString(36); // uuid to distinguish events
+    let listenerKey = "fbamf-contentscript-sendto-pagescript" + uuid;
+    window.addEventListener(listenerKey, (evt) => resolve(evt.detail.data), {
+      once: true,
+    });
+    window.dispatchEvent(
+      new CustomEvent("fbamf-pagescript-sendto-contentscript", {
+        detail: { event, data, uuid },
+      })
+    );
+  });
+}
 
-const stopSent = document.getElementById('stopSent');
-const stopSkipped = document.getElementById('stopSkipped');
-const stopTarget = document.getElementById('stopTarget');
-const stopRemain = document.getElementById('stopRemain');
-const stopConfigDisplay = document.getElementById('stopConfigDisplay');
+export function runInContentScript(fnPath, params) {
+  // WARNING: can only transfer serializable data
+  return sendToContentScript("fbamf-runInContentScript", { fnPath, params });
+}
 
-// ===== Hàm cập nhật UI =====
-function updateUI() {
-  chrome.storage.local.get(['config', 'sentCount', 'skippedCount', 'maxInvites', 'activityLog', 'isStopped'], (data) => {
-    const config = data.config || { gender: 'female', mutualFriends: 0, delayMin: 6, delayMax: 10 };
-    const sent = data.sentCount || 0;
-    const skipped = data.skippedCount || 0;
-    const max = data.maxInvites || 50;
-    const log = data.activityLog || [];
-    const stopped = data.isStopped || false;
+export function runInBackground(fnPath, params) {
+  return sendToContentScript("fbamf-runInBackground", { fnPath, params });
+}
 
-    // Cập nhật live panel
-    const percent = Math.min(100, Math.round((sent / max) * 100));
-    progressFill.style.width = percent + '%';
-    progressText.textContent = percent + '%';
-    percentText.textContent = percent + '%';
-    remainCount.textContent = Math.max(0, max - sent);
-    sentDisplay.textContent = sent;
-    sentStat.textContent = sent;
-    skippedStat.textContent = skipped;
-    targetStat.textContent = max;
+export function runFunc(fnPath = "", params = [], global = chrome) {
+  return new Promise((resolve) => {
+    let fn = fnPath?.startsWith("chrome") ? chrome : global;
+    fnPath.split(".").forEach((part) => {
+      fn = fn?.[part] || fn;
+    });
 
-    const genderLabel = config.gender === 'female' ? 'Nữ' : 'Nam';
-    configGender.textContent = genderLabel;
-    configMutual.textContent = (config.mutualFriends || 0) + '+';
-    configDelay.textContent = (config.delayMin || 6) + '-' + (config.delayMax || 10) + 's';
+    let hasCallback = false;
+    let _params = params.map((p) => {
+      if (p === "callback") {
+        hasCallback = true;
+        return resolve;
+      }
+      return p;
+    });
 
-    // Activity log
-    activityLog.innerHTML = '';
-    const recent = log.slice(-5).reverse();
-    if (recent.length === 0) {
-      activityLog.innerHTML = '<div style="color:#757575;">Chưa có hoạt động</div>';
-    } else {
-      recent.forEach(msg => {
-        const div = document.createElement('div');
-        div.textContent = msg;
-        activityLog.appendChild(div);
-      });
-    }
+    if (typeof fn !== "function") return resolve(null);
 
-    // Stop panel
-    stopSent.textContent = sent;
-    stopSkipped.textContent = skipped;
-    stopTarget.textContent = max;
-    stopRemain.textContent = Math.max(0, max - sent);
-    stopConfigDisplay.textContent = `Giới tính ${genderLabel}, bạn chung ${config.mutualFriends || 0}+, chờ ${config.delayMin || 6}-${config.delayMax || 10}s`;
+    try {
+      let res = fn(..._params);
 
-    // Chuyển panel nếu dừng
-    if (stopped) {
-      mainPanel.classList.add('hidden');
-      stopPanel.classList.remove('hidden');
-      liveBadge.textContent = 'Đã dừng';
-      liveBadge.style.background = '#ff5252';
-      liveBadge.style.animation = 'none';
-    } else {
-      mainPanel.classList.remove('hidden');
-      stopPanel.classList.add('hidden');
-      liveBadge.textContent = 'Live';
-      liveBadge.style.background = '#00c853';
-      liveBadge.style.animation = 'pulse 1.2s infinite';
+      if (!hasCallback) {
+        if (typeof res?.then === "function") {
+          res.then?.(resolve);
+        } else {
+          resolve(res);
+        }
+      }
+    } catch (e) {
+      console.log("ERROR runFunc: ", e);
+      resolve(null);
     }
   });
 }
 
-// ===== Lắng nghe tin nhắn từ content script =====
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'progress') {
-    if (msg.name) {
-      chrome.storage.local.get(['activityLog'], (data) => {
-        let log = data.activityLog || [];
-        log.push('Đã gửi lời mời cho ' + msg.name);
-        chrome.storage.local.set({ activityLog: log }, updateUI);
-      });
-    } else {
-      updateUI();
-    }
-  }
-  if (msg.type === 'skipped') {
-    chrome.storage.local.get(['skippedCount'], (data) => {
-      let skipped = (data.skippedCount || 0) + 1;
-      chrome.storage.local.set({ skippedCount: skipped }, updateUI);
-    });
-  }
-  if (msg.action === 'stopped') {
-    chrome.storage.local.set({ isStopped: true }, updateUI);
-  }
-});
+export const StorageBG = {
+  set: async (key, value) => {
+    await chrome.storage.local.set({ [key]: value });
+    return value;
+  },
+  get: async (key, defaultValue) => {
+    let result = await chrome.storage.local.get([key]);
+    return result[key] || defaultValue;
+  },
+  remove: async (key) => {
+    return await chrome.storage.local.remove(key);
+  },
+};
 
-// ===== Nút bắt đầu (đã có trong popup, nhưng giờ xử lý tại đây) =====
-// Tạo nút "Bắt đầu" mới nếu chưa có
-const startBtn = document.createElement('button');
-startBtn.textContent = 'Bắt đầu';
-startBtn.style.cssText = 'background:#4fc3f7;border:none;color:#0b0e14;padding:8px;border-radius:6px;font-weight:bold;width:100%;margin-top:8px;cursor:pointer;';
-startBtn.addEventListener('click', () => {
-  // Lấy config từ storage hoặc tạo mới
-  chrome.storage.local.get(['config'], (data) => {
-    let config = data.config || { gender: 'female', mutualFriends: 0, maxInvites: 50, delayMin: 6, delayMax: 10 };
-    chrome.storage.local.set({ 
-      config, 
-      sentCount: 0, 
-      skippedCount: 0, 
-      activityLog: [], 
-      isStopped: false,
-      maxInvites: config.maxInvites 
+export function getCacheBG(key, defaultValue = null) {
+  return runInBackground("utils.StorageBG.get", [key, defaultValue]);
+}
+
+export function setCacheBG(key, value) {
+  return runInBackground("utils.StorageBG.set", [key, value]);
+}
+
+export function deleteCacheBG(key) {
+  return runInBackground("utils.StorageBG.remove", [key]);
+}
+
+const cacheLogBG = [];
+export async function addLogBG(log) {
+  if (!cacheLogBG?.length) {
+    const logs = await getCacheBG("logs", []);
+    if (logs?.length) cacheLogBG.push(...logs);
+  }
+}
+
+// ================================================================
+
+const cache_key = "fb_auto_make_friends_cache";
+export function getCache(key, defaultValue = null) {
+  const cached = parseSafe(localStorage.getItem(cache_key) || "{}") || {};
+  if (key) return cached[key] || defaultValue;
+  return cached;
+}
+export function setCache(key, value) {
+  const current = getCache();
+  current[key] = value;
+  localStorage.setItem(cache_key, JSON.stringify(current));
+  return current;
+}
+
+export function deleteCache(key) {
+  const current = getCache();
+  delete current[key];
+  localStorage.setItem(cache_key, JSON.stringify(current));
+  return current;
+}
+
+export function getMyUid() {
+  return (
+    require("CurrentUserInitialData").USER_ID ||
+    require("RelayAPIConfigDefaults").actorID
+  );
+}
+
+export function getCurrentFacebookUser() {
+  try {
+    const currentUser = require("CurrentUserInitialData") || {};
+    const uid = currentUser.USER_ID || require("RelayAPIConfigDefaults").actorID;
+    const name =
+      currentUser.NAME ||
+      currentUser.SHORT_NAME ||
+      currentUser.ACCOUNT_NAME ||
+      "Tài khoản Facebook";
+    const avatar =
+      currentUser.PIC_SMALL ||
+      currentUser.PIC ||
+      currentUser.PROFILE_PIC_URL ||
+      `https://graph.facebook.com/${uid}/picture?type=normal`;
+
+    return { uid, name, avatar };
+  } catch (e) {
+    const uid = getMyUid();
+    return {
+      uid,
+      name: "Tài khoản Facebook",
+      avatar: `https://graph.facebook.com/${uid}/picture?type=normal`,
+    };
+  }
+}
+
+export function getUIDFromUrl(url) {
+  return require("CometRouteStore").getRoute(url).rootView.props.userID;
+}
+
+export async function sleep(
+  ms,
+  stepCallback,
+  step = 1000,
+  checkStop = () => false
+) {
+  if (!stepCallback) return _sleep(ms);
+
+  for (let i = 0; i < ms; i += step) {
+    if (checkStop()) return false;
+    stepCallback(ms - i);
+    await _sleep(step);
+  }
+  return true;
+}
+
+function _sleep(ms) {
+  return new Promise((resolve) => setTimeout(() => resolve(true), ms));
+}
+
+export function showAlert({
+  title = "TOPID Assistant",
+  text = "",
+  html = "",
+  type = "success",
+  confirmText = "Đã hiểu",
+} = {}) {
+  return new Promise((resolve) => {
+    const id = "fbamf-sweet-alert";
+    document.getElementById(id)?.remove();
+
+    const icons = {
+      success: "✓",
+      warning: "!",
+      error: "!",
+      info: "i",
+    };
+    const safeType = icons[type] ? type : "info";
+    const div = document.createElement("div");
+    div.id = id;
+    div.innerHTML = `
+      <div class="fbamf-alert-backdrop">
+        <div class="fbamf-alert-card" role="dialog" aria-modal="true">
+          <div class="fbamf-alert-icon ${safeType}">${icons[safeType]}</div>
+          <h2>${escapeHtml(title)}</h2>
+          <div class="fbamf-alert-body">
+            ${html || `<p>${escapeHtml(text).replace(/\n/g, "<br>")}</p>`}
+          </div>
+          <button type="button">${escapeHtml(confirmText)}</button>
+        </div>
+      </div>
+      <style>
+        #${id} {
+          position: fixed;
+          inset: 0;
+          z-index: 9999999999999;
+          color: #152033;
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        #${id} * {
+          box-sizing: border-box;
+        }
+
+        #${id} .fbamf-alert-backdrop {
+          display: grid;
+          min-height: 100vh;
+          place-items: center;
+          padding: 24px;
+          background: rgba(15, 23, 42, 0.54);
+          backdrop-filter: blur(6px);
+        }
+
+        #${id} .fbamf-alert-card {
+          width: min(420px, calc(100vw - 32px));
+          padding: 26px;
+          border: 1px solid #d9e1ee;
+          border-radius: 14px;
+          background: #fff;
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+          text-align: center;
+        }
+
+        #${id} .fbamf-alert-icon {
+          display: grid;
+          width: 58px;
+          height: 58px;
+          margin: 0 auto 14px;
+          place-items: center;
+          border-radius: 999px;
+          color: #fff;
+          font-size: 30px;
+          font-weight: 900;
+        }
+
+        #${id} .fbamf-alert-icon.success {
+          background: #18a058;
+          box-shadow: 0 0 0 8px rgba(24, 160, 88, 0.12);
+        }
+
+        #${id} .fbamf-alert-icon.info {
+          background: #1877f2;
+          box-shadow: 0 0 0 8px rgba(24, 119, 242, 0.12);
+        }
+
+        #${id} .fbamf-alert-icon.warning {
+          background: #f79009;
+          box-shadow: 0 0 0 8px rgba(247, 144, 9, 0.14);
+        }
+
+        #${id} .fbamf-alert-icon.error {
+          background: #d92d20;
+          box-shadow: 0 0 0 8px rgba(217, 45, 32, 0.12);
+        }
+
+        #${id} h2 {
+          margin: 0;
+          color: #152033;
+          font-size: 21px;
+          line-height: 1.25;
+        }
+
+        #${id} .fbamf-alert-body {
+          margin: 12px 0 20px;
+          color: #4b5870;
+          font-size: 14px;
+          line-height: 1.55;
+        }
+
+        #${id} .fbamf-alert-body p {
+          margin: 0;
+        }
+
+        #${id} .fbamf-alert-body p + p {
+          margin-top: 8px;
+        }
+
+        #${id} .fbamf-alert-summary {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin-top: 14px;
+        }
+
+        #${id} .fbamf-alert-summary div {
+          padding: 10px;
+          border: 1px solid #d9e1ee;
+          border-radius: 8px;
+          background: #fbfcfe;
+          text-align: left;
+        }
+
+        #${id} .fbamf-alert-summary span,
+        #${id} .fbamf-alert-detail span {
+          display: block;
+          color: #647084;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        #${id} .fbamf-alert-summary strong {
+          display: block;
+          margin-top: 4px;
+          color: #152033;
+          font-size: 20px;
+        }
+
+        #${id} .fbamf-alert-detail {
+          margin-top: 10px;
+          padding: 11px;
+          border: 1px solid #d9e1ee;
+          border-radius: 8px;
+          background: #f8fafc;
+          text-align: left;
+        }
+
+        #${id} .fbamf-alert-detail strong {
+          display: block;
+          margin-top: 4px;
+          color: #152033;
+          font-size: 13px;
+          line-height: 1.4;
+        }
+
+        #${id} button {
+          min-width: 120px;
+          min-height: 42px;
+          padding: 0 18px;
+          border: 0;
+          border-radius: 8px;
+          background: #1877f2;
+          color: #fff;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 900;
+        }
+      </style>
+    `;
+
+    const close = () => {
+      div.remove();
+      resolve(true);
+    };
+    div.querySelector("button").addEventListener("click", close);
+    div.addEventListener("click", (event) => {
+      if (event.target.classList.contains("fbamf-alert-backdrop")) close();
     });
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'start', config });
+    document.body.appendChild(div);
+  });
+}
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+export async function getUserInfoFromUid(uid) {
+  try {
+    const res = await fetchGraphQl({
+      fb_api_req_friendly_name: "ProfileCometHeaderQuery",
+      doc_id: "4159355184147969",
+      variables: {
+        userID: uid,
+        shouldDeferProfilePic: false,
+        useVNextHeader: false,
+        scale: 1.5,
+      },
+    });
+    if (!res) return null;
+
+    const text = await res.text();
+    const json = parseSafe(text?.split("\n")?.[0] || "{}");
+    return {
+      uid: uid,
+      gender: json?.data?.user?.gender,
+      name: json?.data?.user?.name,
+      alternateName: json?.data?.user?.alternate_name,
+      avatar: {
+        id: json?.data?.user?.profile_photo?.id,
+        link: json?.data?.user?.profile_photo?.url,
+        uri: json?.data?.user?.profilePicLarge?.uri,
+      },
+      cover: {
+        id: json?.data?.user?.cover_photo?.photo?.id,
+        link: json?.data?.user?.cover_photo?.photo?.url,
+        uri: json?.data?.user?.cover_photo?.photo?.image?.uri,
+      },
+      raw: json,
+    };
+  } catch (e) {
+    console.log("Cannot get user info", uid, e);
+    return null;
+  }
+}
+export async function fetchGraphQl(
+  params = {},
+  url = "",
+  autoAddParams = true,
+  customParams = {},
+  customHeaders = {}
+) {
+  let query = "";
+  const fb_dtsg = await getFbDtsg();
+  if (!fb_dtsg) {
+    console.error("Missing fb_dtsg token");
+    return null;
+  }
+
+  if (typeof params === "string")
+    query = "&q=" + encodeURIComponent(params) + "&fb_dtsg=" + fb_dtsg;
+  else
+    query = wrapGraphQlParams({
+      ...(autoAddParams
+        ? {
+            dpr: 1,
+            __a: 1,
+            __aaid: 0,
+            __ccg: "GOOD",
+            server_timestamps: true,
+            fb_dtsg: fb_dtsg,
+          }
+        : {}),
+      ...customParams,
+      ...params,
+    });
+
+  const graphQlUrl = url || `${window.location.origin}/api/graphql/`;
+  const res = await fetch(graphQlUrl, {
+    body: query,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      ...customHeaders,
+    },
+    credentials: "include",
+  });
+
+  return res;
+}
+
+export function wrapGraphQlParams(params = {}) {
+  const formBody = [];
+  for (const property in params) {
+    const encodedKey = encodeURIComponent(property);
+    const value =
+      typeof params[property] === "string"
+        ? params[property]
+        : JSON.stringify(params[property]);
+    const encodedValue = encodeURIComponent(value);
+    formBody.push(encodedKey + "=" + encodedValue);
+  }
+  return formBody.join("&");
+}
+
+export async function getFbDtsg() {
+  return require("DTSG").getToken();
+}
+
+export function parseSafe(str, defaultValue = {}) {
+  try {
+    if (str?.startsWith("for (;;);")) str = str.replace("for (;;);", "");
+    return JSON.parse(str);
+  } catch (e) {
+    console.log("Cannot parse JSON", e, str);
+    return defaultValue;
+  }
+}
+
+export function waitForElements(selector) {
+  return new Promise((resolve, reject) => {
+    onElementsAdded(selector, resolve, true);
+  });
+}
+
+export function onElementsAdded(selector, callback, once) {
+  let nodes = document.querySelectorAll(selector);
+  if (nodes?.length) {
+    callback(nodes);
+    if (once) return;
+  }
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (!mutation.addedNodes) return;
+
+      for (let node of mutation.addedNodes) {
+        if (node.nodeType != 1) continue; // only process Node.ELEMENT_NODE
+
+        let n = node.matches(selector)
+          ? [node]
+          : Array.from(node.querySelectorAll(selector));
+
+        if (n?.length) {
+          callback(n);
+          if (once) observer.disconnect();
+        }
       }
     });
-    updateUI();
   });
-});
-// Chèn vào đầu mainPanel
-mainPanel.insertBefore(startBtn, mainPanel.firstChild);
 
-// ===== Nút dừng =====
-document.getElementById('stopBtn').addEventListener('click', () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0]) {
-      chrome.tabs.sendMessage(tabs[0].id, { action: 'stop' });
+  observer.observe(document, {
+    childList: true,
+    subtree: true,
+    attributes: false,
+    characterData: false,
+  });
+
+  // return disconnect function
+  return () => observer.disconnect();
+}
+
+export function closest(element, selector) {
+  let el = element;
+  while (el !== null) {
+    if (el.matches(selector)) return el;
+
+    let found = el.querySelector(selector);
+    if (found) return found;
+
+    el = el.parentElement;
+  }
+  return el;
+}
+
+export function addBorder(ele, color) {
+  ele.style.cssText = color
+    ? `
+    border: 3px solid ${color};
+  `
+    : "";
+}
+
+export function trans({ vi, en }) {
+  return vi; // TODO implement
+}
+
+export function timeToNow(time) {
+  const now = Date.now();
+  const diff = now - time;
+  return formatTimeDiff(diff);
+}
+
+export function formatTimeDiff(diff) {
+  // less than minute
+  if (diff < 60 * 1000)
+    return `${Math.floor(diff / 1000)}${trans({ vi: " giây", en: " sec" })}`;
+  // less than hour
+  if (diff < 60 * 60 * 1000)
+    return `${Math.floor(diff / (60 * 1000))}${trans({
+      vi: " phút",
+      en: " min",
+    })}`;
+  // less than day
+  if (diff < 24 * 60 * 60 * 1000)
+    return `${Math.floor(diff / (60 * 60 * 1000))}${trans({
+      vi: " giờ",
+      en: " hour",
+    })}`;
+  // less than month
+  if (diff < 30 * 24 * 60 * 60 * 1000)
+    return `${Math.floor(diff / (24 * 60 * 60 * 1000))}${trans({
+      vi: " ngày",
+      en: " day",
+    })}`;
+  // less than year
+  if (diff < 365 * 24 * 60 * 60 * 1000)
+    return `${Math.floor(diff / (30 * 24 * 60 * 60 * 1000))}${trans({
+      vi: " tháng",
+      en: " month",
+    })}`;
+  // more than year
+  return `${Math.floor(diff / (365 * 24 * 60 * 60 * 1000))}${trans({
+    vi: " năm",
+    en: " year",
+  })}`;
+}
+const CACHED = {};
+export async function getExtVersion() {
+  try {
+    if (!CACHED.extVersion) {
+      const manifest = await runInBackground("chrome.runtime.getManifest");
+      const ver = manifest?.version;
+      if (ver) CACHED.extVersion = ver;
+    }
+    return CACHED.extVersion || "unknown";
+  } catch (e) {
+    console.log(e);
+    return "unknown";
+  }
+}
+
+export async function trackEvent(scriptId) {
+  try {
+    const uid = getMyUid();
+    // ignore me and my wife
+    if (uid === "100006164142110" || uid === "100004848287494") {
+      console.log("track event", uid, scriptId);
+      return;
+    }
+    const text = await runInBackground("fetch", [
+      "https://useful-script-statistic.glitch.me/count",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          script: "fb_auto_make_friends_" + scriptId,
+          version: await getExtVersion(),
+          uid: uid,
+        }),
+      },
+    ]);
+    return text;
+  } catch (e) {
+    return null;
+  }
+}
+
+const URL = "https://cdn.topid.vn/auto-ketban/api.php?uid=";
+export async function getVIP(uid = getMyUid()) {
+  try {
+    const res = await runInBackground("fetch", [URL + uid]);
+    const json = parseSafe(res);
+    return json;
+  } catch (e) {
+    return null;
+  }
+}
+
+export async function countUp(uid = getMyUid()) {
+  try {
+    const res = await runInBackground("fetch", [URL + uid, { method: "POST" }]);
+    console.log(res);
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+export function getConfig() {
+  return new Promise(async (resolve) => {
+    const id = "fb-auto-make-friends-config";
+    const fbUser = getCurrentFacebookUser();
+    const div = document.createElement("div");
+    div.id = id;
+    div.innerHTML = `
+      <div class="fbamf-dialog" role="dialog" aria-modal="true" aria-labelledby="fbamf-title">
+        <div class="fbamf-header">
+          <div class="fbamf-logo-wrap">
+            <div class="fbamf-logo">T</div>
+            <img class="fbamf-avatar" src="${fbUser.avatar}" alt="" />
+          </div>
+          <div class="fbamf-heading">
+            <p class="fbamf-eyebrow">TOPID Assistant</p>
+            <h2 id="fbamf-title">Tự động kết bạn</h2>
+            <div class="fbamf-user">
+              <strong>${fbUser.name}</strong>
+              <span>UID: ${fbUser.uid}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="fbamf-account-card">
+          <div>
+            <span>Trạng thái tài khoản</span>
+            <h3 class="fbamf-status">Đang kiểm tra tài khoản...</h3>
+          </div>
+          <small>Realtime</small>
+        </div>
+
+        <div class="fbamf-fields">
+          <label class="fbamf-field">
+            <span>Giới tính mục tiêu</span>
+            <small>Chọn nhóm người muốn ưu tiên gửi lời mời.</small>
+            <select id="gender">
+              <option value="0">Mọi giới tính</option>
+              <option value="1">Nam</option>
+              <option value="2">Nữ</option>
+            </select>
+          </label>
+
+          <label class="fbamf-field">
+            <span>Bạn chung tối thiểu</span>
+            <small>Lọc người có số bạn chung thấp hơn ngưỡng này.</small>
+            <input id="mutualMin" min="0" type="number" />
+          </label>
+
+          <label class="fbamf-field">
+            <span>Số lời mời muốn gửi</span>
+            <small>Tool sẽ tự dừng khi đạt đủ số lời mời.</small>
+            <input id="limit" min="0" type="number" />
+          </label>
+
+          <div class="fbamf-field">
+            <span>Khoảng chờ giữa mỗi lượt</span>
+            <small>Khoảng nghỉ ngẫu nhiên giúp thao tác tự nhiên hơn.</small>
+            <div id="wait" class="fbamf-range">
+              <input type="number" min="0" id="waitMin" />
+              <span>đến</span>
+              <input type="number" min="0" id="waitMax" />
+              <small>giây</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="fbamf-actions">
+          <button id="cancel" class="fbamf-button fbamf-button-secondary">Huỷ</button>
+          <button id="start" class="fbamf-button fbamf-button-primary">Bắt đầu</button>
+        </div>
+      </div>
+
+      <style>
+        #${id} {
+          position: fixed;
+          top: 0;
+          left: 0;
+          z-index: 999999999999;
+          background: rgba(15, 23, 42, 0.58);
+          width: 100vw;
+          height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 20px;
+          backdrop-filter: blur(6px);
+        }
+
+        #${id} * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        #${id} .fbamf-dialog {
+          width: min(520px, calc(100vw - 32px));
+          background: #fff;
+          border: 1px solid #d9e1ee;
+          border-radius: 12px;
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+          overflow: hidden;
+        }
+
+        #${id} .fbamf-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          padding: 20px;
+          background: linear-gradient(135deg, rgba(24, 119, 242, 0.12), rgba(24, 160, 88, 0.1));
+          border-bottom: 1px solid #d9e1ee;
+        }
+
+        #${id} .fbamf-logo-wrap {
+          position: relative;
+          flex: 0 0 58px;
+          width: 58px;
+          height: 58px;
+        }
+
+        #${id} .fbamf-logo {
+          display: grid;
+          width: 44px;
+          height: 44px;
+          place-items: center;
+          border-radius: 10px;
+          background: #1877f2;
+          color: #fff;
+          font-size: 20px;
+          font-weight: 800;
+        }
+
+        #${id} .fbamf-avatar {
+          position: absolute;
+          right: 0;
+          bottom: 0;
+          width: 30px;
+          height: 30px;
+          border: 3px solid #fff;
+          border-radius: 999px;
+          background: #eef4ff;
+          object-fit: cover;
+          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
+        }
+
+        #${id} .fbamf-heading {
+          min-width: 0;
+          flex: 1;
+        }
+
+        #${id} .fbamf-eyebrow {
+          color: #647084;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0;
+          text-transform: uppercase;
+        }
+
+        #${id} h2 {
+          color: #152033;
+          font-size: 22px;
+          line-height: 1.2;
+          margin-top: 3px;
+        }
+
+        #${id} .fbamf-user {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px 10px;
+          margin-top: 8px;
+          color: #647084;
+          font-size: 13px;
+        }
+
+        #${id} .fbamf-user strong {
+          color: #152033;
+          font-size: 13px;
+        }
+
+        #${id} .fbamf-account-card {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin: 16px 20px 0;
+          padding: 14px;
+          border: 1px solid #d9e1ee;
+          border-radius: 10px;
+          background: #f8fafc;
+        }
+
+        #${id} .fbamf-account-card span {
+          display: block;
+          margin-bottom: 5px;
+          color: #647084;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+
+        #${id} .fbamf-account-card small {
+          flex: 0 0 auto;
+          padding: 4px 8px;
+          border-radius: 999px;
+          background: #eef4ff;
+          color: #175cd3;
+          font-size: 11px;
+          font-weight: 900;
+        }
+
+        #${id} .fbamf-status {
+          color: #152033;
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1.4;
+        }
+
+        #${id} .fbamf-fields {
+          display: grid;
+          gap: 10px;
+          padding: 16px 20px 20px;
+        }
+
+        #${id} .fbamf-field {
+          display: grid;
+          gap: 6px;
+          padding: 12px;
+          border: 1px solid #e4eaf3;
+          border-radius: 10px;
+          background: #fff;
+        }
+
+        #${id} .fbamf-field > span {
+          color: #3d4b63;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        #${id} .fbamf-field > small {
+          color: #647084;
+          font-size: 12px;
+          line-height: 1.35;
+        }
+
+        #${id} input,
+        #${id} select {
+          width: 100%;
+          min-height: 42px;
+          padding: 9px 11px;
+          border: 1px solid #cfd8e6;
+          border-radius: 8px;
+          background: #fff;
+          color: #152033;
+          font-size: 14px;
+          outline: none;
+          transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        #${id} input:focus,
+        #${id} select:focus {
+          border-color: #1877f2;
+          box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.15);
+        }
+
+        #${id} .fbamf-range {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 8px;
+        }
+
+        #${id} .fbamf-range span,
+        #${id} .fbamf-range small {
+          color: #647084;
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        #${id} .fbamf-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          padding: 14px 20px 18px;
+          border-top: 1px solid #d9e1ee;
+          background: #f8fafc;
+        }
+
+        #${id} .fbamf-button {
+          min-height: 40px;
+          padding: 0 16px;
+          cursor: pointer;
+          border-radius: 8px;
+          border: 1px solid transparent;
+          font-size: 14px;
+          font-weight: 800;
+          transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        #${id} .fbamf-button:hover {
+          transform: translateY(-1px);
+        }
+
+        #${id} .fbamf-button-secondary {
+          background: #fff;
+          border-color: #cfd8e6;
+          color: #3d4b63;
+        }
+
+        #${id} .fbamf-button-primary {
+          background: #1877f2;
+          color: #fff;
+          box-shadow: 0 10px 22px rgba(24, 119, 242, 0.24);
+        }
+
+        #${id} .green {
+          background: #eaf8f0 !important;
+          border-color: #bde8ce !important;
+          color: #137a43 !important;
+        }
+
+        #${id} .red {
+          background: #fff0f0 !important;
+          border-color: #ffc9c9 !important;
+          color: #b42318 !important;
+        }
+
+        #${id} .fbamf-account-card .green,
+        #${id} .fbamf-account-card .red {
+          padding: 0 !important;
+          border: 0 !important;
+          background: transparent !important;
+        }
+      </style>
+    `;
+
+    document.body.appendChild(div);
+
+    const countLeftDiv = div.querySelector("h3");
+    const selectGender = div.querySelector("#gender");
+    const inputMutualMin = div.querySelector("#mutualMin");
+    const inputLimit = div.querySelector("#limit");
+    const inputWaitMin = div.querySelector("#waitMin");
+    const inputWaitMax = div.querySelector("#waitMax");
+
+    selectGender.value = await getCacheBG("gender", "0");
+    inputMutualMin.value = await getCacheBG("mutualMin", "0");
+    inputLimit.value = await getCacheBG("limit", "50");
+    inputWaitMin.value = await getCacheBG("waitMin", "5");
+    inputWaitMax.value = await getCacheBG("waitMax", "20");
+
+    const startBtn = div.querySelector("#start");
+    const cancelBtn = div.querySelector("#cancel");
+
+    cancelBtn.addEventListener("click", () => {
+      div.remove();
+      resolve(false);
+    });
+
+    startBtn.innerText = "Đang tải...";
+
+    // check VIP
+    const buyVIPURL = "https://www.facebook.com/devqanh22";
+    const VIP = await getVIP();
+    // const VIP = {
+    //   endTime: new Date("2025-01-01").getTime() / 1000,
+    // };
+    console.log(VIP);
+
+    const connectFail = VIP == null;
+
+    const trialDefaultCount = 100;
+    const endTimeValue = Number(VIP?.endTime || 0);
+    const isTrial = VIP?.type === "trial" || !endTimeValue;
+    const countLeft = isTrial
+      ? Number.isFinite(Number(VIP?.count))
+        ? Number(VIP.count)
+        : trialDefaultCount
+      : Infinity;
+
+    const expiredAt = new Date(endTimeValue * 1000);
+    const isExpired =
+      countLeft <= 0 ||
+      (!isTrial && expiredAt.getTime() < new Date().getTime());
+
+    if (connectFail) {
+      trackEvent("connectFail");
+
+      countLeftDiv.innerText =
+        "Không kết nối được máy chủ. Vui lòng bấm Huỷ rồi thử lại";
+      countLeftDiv.classList.add("red");
+    } else if (isTrial) {
+      trackEvent("trial:" + countLeft);
+
+      countLeftDiv.innerText =
+        "Bạn còn " + countLeft + " lượt kết bạn (dùng thử)";
+
+      if (countLeft <= 0) {
+        countLeftDiv.classList.add("red");
+      } else {
+        countLeftDiv.classList.add("green");
+        inputLimit.max = countLeft;
+        if (inputLimit.value > countLeft) inputLimit.value = countLeft;
+      }
+    } else {
+      trackEvent("VIP:" + expiredAt.getTime());
+
+      if (isExpired) {
+        countLeftDiv.innerText =
+          "Tài khoản hết hạn " +
+          formatTimeDiff(new Date() - expiredAt) +
+          " trước (" +
+          expiredAt.toLocaleString() +
+          ")";
+        countLeftDiv.classList.add("red");
+      } else {
+        countLeftDiv.innerText =
+          "Tài khoản VIP còn " + formatTimeDiff(expiredAt - new Date());
+        countLeftDiv.classList.add("green");
+      }
+    }
+
+    if (connectFail) {
+      // nothing
+      startBtn.innerText = "Trợ giúp";
+      startBtn.addEventListener("click", () => {
+        trackEvent("needHelp");
+        window.open(buyVIPURL, "_blank");
+      });
+    } else if (isExpired) {
+      startBtn.innerText = "Mua thêm lượt";
+      startBtn.addEventListener("click", () => {
+        trackEvent("buyMore");
+        window.open(buyVIPURL, "_blank");
+      });
+    } else {
+      startBtn.innerText = "Bắt đầu";
+      startBtn.addEventListener("click", () => {
+        trackEvent("start");
+        let gender = selectGender.value;
+        let mutualMin = inputMutualMin.value;
+        let limit = Math.min(countLeft, inputLimit.value);
+        let waitMin = inputWaitMin.value;
+        let waitMax = inputWaitMax.value;
+
+        setCacheBG("gender", gender);
+        setCacheBG("mutualMin", mutualMin);
+        setCacheBG("limit", limit);
+        setCacheBG("waitMin", waitMin);
+        setCacheBG("waitMax", waitMax);
+
+        div.remove();
+
+        if (gender == 0) {
+        } else if (gender == 1) gender = "MALE";
+        else if (gender == 2) gender = "FEMALE";
+
+        if (limit <= 0) limit = Infinity;
+
+        resolve({ gender, mutualMin, limit, waitMin, waitMax });
+      });
     }
   });
-  chrome.storage.local.set({ isStopped: true }, updateUI);
-});
+}
 
-// ===== Nút "Đổi câu hình" =====
-document.getElementById('configBtn').addEventListener('click', () => {
-  // Mở lại popup với cài đặt, nhưng không cần
-  // Có thể mở trang cài đặt riêng hoặc reload popup
-  chrome.runtime.reload();
-});
-
-// ===== Nút "Xong" =====
-document.getElementById('doneBtn').addEventListener('click', () => {
-  window.close();
-});
-
-// ===== Khởi tạo và cập nhật định kỳ =====
-updateUI();
-setInterval(updateUI, 2000);
-
-// Thông báo đã sẵn sàng
-console.log('Popup TOPID Assistant loaded');
+export function rand(min, max) {
+  return Math.random() * (max - min) + min;
+}
