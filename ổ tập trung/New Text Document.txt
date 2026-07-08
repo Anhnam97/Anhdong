@@ -1,1120 +1,515 @@
-export function sendToContentScript(event, data) {
-  return new Promise((resolve, reject) => {
-    let uuid = Math.random().toString(36); // uuid to distinguish events
-    let listenerKey = "fbamf-contentscript-sendto-pagescript" + uuid;
-    window.addEventListener(listenerKey, (evt) => resolve(evt.detail.data), {
-      once: true,
-    });
-    window.dispatchEvent(
-      new CustomEvent("fbamf-pagescript-sendto-contentscript", {
-        detail: { event, data, uuid },
-      })
-    );
-  });
-}
+<?php
+declare(strict_types=1);
 
-export function runInContentScript(fnPath, params) {
-  // WARNING: can only transfer serializable data
-  return sendToContentScript("fbamf-runInContentScript", { fnPath, params });
-}
+session_start();
 
-export function runInBackground(fnPath, params) {
-  return sendToContentScript("fbamf-runInBackground", { fnPath, params });
-}
+const ADMIN_PASSWORD = 'Quyenanh_2016';
+const DEFAULT_TRIAL_COUNT = 100;
+const DB_FILE = __DIR__ . '/topid_accounts.sqlite';
 
-export function runFunc(fnPath = "", params = [], global = chrome) {
-  return new Promise((resolve) => {
-    let fn = fnPath?.startsWith("chrome") ? chrome : global;
-    fnPath.split(".").forEach((part) => {
-      fn = fn?.[part] || fn;
-    });
+function db(): PDO
+{
+    static $pdo = null;
 
-    let hasCallback = false;
-    let _params = params.map((p) => {
-      if (p === "callback") {
-        hasCallback = true;
-        return resolve;
-      }
-      return p;
-    });
-
-    if (typeof fn !== "function") return resolve(null);
-
-    try {
-      let res = fn(..._params);
-
-      if (!hasCallback) {
-        if (typeof res?.then === "function") {
-          res.then?.(resolve);
-        } else {
-          resolve(res);
-        }
-      }
-    } catch (e) {
-      console.log("ERROR runFunc: ", e);
-      resolve(null);
+    if ($pdo instanceof PDO) {
+        return $pdo;
     }
-  });
+
+    $pdo = new PDO('sqlite:' . DB_FILE);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo->exec('PRAGMA busy_timeout = 5000');
+    $pdo->exec('PRAGMA journal_mode = DELETE');
+    initDb($pdo);
+
+    return $pdo;
 }
 
-export const StorageBG = {
-  set: async (key, value) => {
-    await chrome.storage.local.set({ [key]: value });
-    return value;
-  },
-  get: async (key, defaultValue) => {
-    let result = await chrome.storage.local.get([key]);
-    return result[key] || defaultValue;
-  },
-  remove: async (key) => {
-    return await chrome.storage.local.remove(key);
-  },
-};
+function initDb(PDO $pdo): void
+{
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS accounts (
+            uid TEXT PRIMARY KEY,
+            type TEXT NOT NULL DEFAULT 'trial',
+            count INTEGER NOT NULL DEFAULT 100,
+            end_time INTEGER NULL,
+            note TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            last_used_at INTEGER NULL
+        )
+    ");
 
-export function getCacheBG(key, defaultValue = null) {
-  return runInBackground("utils.StorageBG.get", [key, defaultValue]);
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            time INTEGER NOT NULL,
+            message TEXT NOT NULL,
+            ip TEXT NOT NULL DEFAULT ''
+        )
+    ");
 }
 
-export function setCacheBG(key, value) {
-  return runInBackground("utils.StorageBG.set", [key, value]);
+function cleanUid(string $uid): string
+{
+    return preg_replace('/\D+/', '', $uid) ?? '';
 }
 
-export function deleteCacheBG(key) {
-  return runInBackground("utils.StorageBG.remove", [key]);
+function now(): int
+{
+    return time();
 }
 
-const cacheLogBG = [];
-export async function addLogBG(log) {
-  if (!cacheLogBG?.length) {
-    const logs = await getCacheBG("logs", []);
-    if (logs?.length) cacheLogBG.push(...logs);
-  }
+function jsonResponse(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
-// ================================================================
+function getAccount(string $uid): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM accounts WHERE uid = :uid');
+    $stmt->execute([':uid' => $uid]);
+    $account = $stmt->fetch();
 
-const cache_key = "fb_auto_make_friends_cache";
-export function getCache(key, defaultValue = null) {
-  const cached = parseSafe(localStorage.getItem(cache_key) || "{}") || {};
-  if (key) return cached[key] || defaultValue;
-  return cached;
-}
-export function setCache(key, value) {
-  const current = getCache();
-  current[key] = value;
-  localStorage.setItem(cache_key, JSON.stringify(current));
-  return current;
+    return $account ?: null;
 }
 
-export function deleteCache(key) {
-  const current = getCache();
-  delete current[key];
-  localStorage.setItem(cache_key, JSON.stringify(current));
-  return current;
-}
-
-export function getMyUid() {
-  return (
-    require("CurrentUserInitialData").USER_ID ||
-    require("RelayAPIConfigDefaults").actorID
-  );
-}
-
-export function getCurrentFacebookUser() {
-  try {
-    const currentUser = require("CurrentUserInitialData") || {};
-    const uid = currentUser.USER_ID || require("RelayAPIConfigDefaults").actorID;
-    const name =
-      currentUser.NAME ||
-      currentUser.SHORT_NAME ||
-      currentUser.ACCOUNT_NAME ||
-      "Tài khoản Facebook";
-    const avatar =
-      currentUser.PIC_SMALL ||
-      currentUser.PIC ||
-      currentUser.PROFILE_PIC_URL ||
-      `https://graph.facebook.com/${uid}/picture?type=normal`;
-
-    return { uid, name, avatar };
-  } catch (e) {
-    const uid = getMyUid();
-    return {
-      uid,
-      name: "Tài khoản Facebook",
-      avatar: `https://graph.facebook.com/${uid}/picture?type=normal`,
-    };
-  }
-}
-
-export function getUIDFromUrl(url) {
-  return require("CometRouteStore").getRoute(url).rootView.props.userID;
-}
-
-export async function sleep(
-  ms,
-  stepCallback,
-  step = 1000,
-  checkStop = () => false
-) {
-  if (!stepCallback) return _sleep(ms);
-
-  for (let i = 0; i < ms; i += step) {
-    if (checkStop()) return false;
-    stepCallback(ms - i);
-    await _sleep(step);
-  }
-  return true;
-}
-
-function _sleep(ms) {
-  return new Promise((resolve) => setTimeout(() => resolve(true), ms));
-}
-
-export function showAlert({
-  title = "TOPID Assistant",
-  text = "",
-  html = "",
-  type = "success",
-  confirmText = "Đã hiểu",
-} = {}) {
-  return new Promise((resolve) => {
-    const id = "fbamf-sweet-alert";
-    document.getElementById(id)?.remove();
-
-    const icons = {
-      success: "✓",
-      warning: "!",
-      error: "!",
-      info: "i",
-    };
-    const safeType = icons[type] ? type : "info";
-    const div = document.createElement("div");
-    div.id = id;
-    div.innerHTML = `
-      <div class="fbamf-alert-backdrop">
-        <div class="fbamf-alert-card" role="dialog" aria-modal="true">
-          <div class="fbamf-alert-icon ${safeType}">${icons[safeType]}</div>
-          <h2>${escapeHtml(title)}</h2>
-          <div class="fbamf-alert-body">
-            ${html || `<p>${escapeHtml(text).replace(/\n/g, "<br>")}</p>`}
-          </div>
-          <button type="button">${escapeHtml(confirmText)}</button>
-        </div>
-      </div>
-      <style>
-        #${id} {
-          position: fixed;
-          inset: 0;
-          z-index: 9999999999999;
-          color: #152033;
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-
-        #${id} * {
-          box-sizing: border-box;
-        }
-
-        #${id} .fbamf-alert-backdrop {
-          display: grid;
-          min-height: 100vh;
-          place-items: center;
-          padding: 24px;
-          background: rgba(15, 23, 42, 0.54);
-          backdrop-filter: blur(6px);
-        }
-
-        #${id} .fbamf-alert-card {
-          width: min(420px, calc(100vw - 32px));
-          padding: 26px;
-          border: 1px solid #d9e1ee;
-          border-radius: 14px;
-          background: #fff;
-          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
-          text-align: center;
-        }
-
-        #${id} .fbamf-alert-icon {
-          display: grid;
-          width: 58px;
-          height: 58px;
-          margin: 0 auto 14px;
-          place-items: center;
-          border-radius: 999px;
-          color: #fff;
-          font-size: 30px;
-          font-weight: 900;
-        }
-
-        #${id} .fbamf-alert-icon.success {
-          background: #18a058;
-          box-shadow: 0 0 0 8px rgba(24, 160, 88, 0.12);
-        }
-
-        #${id} .fbamf-alert-icon.info {
-          background: #1877f2;
-          box-shadow: 0 0 0 8px rgba(24, 119, 242, 0.12);
-        }
-
-        #${id} .fbamf-alert-icon.warning {
-          background: #f79009;
-          box-shadow: 0 0 0 8px rgba(247, 144, 9, 0.14);
-        }
-
-        #${id} .fbamf-alert-icon.error {
-          background: #d92d20;
-          box-shadow: 0 0 0 8px rgba(217, 45, 32, 0.12);
-        }
-
-        #${id} h2 {
-          margin: 0;
-          color: #152033;
-          font-size: 21px;
-          line-height: 1.25;
-        }
-
-        #${id} .fbamf-alert-body {
-          margin: 12px 0 20px;
-          color: #4b5870;
-          font-size: 14px;
-          line-height: 1.55;
-        }
-
-        #${id} .fbamf-alert-body p {
-          margin: 0;
-        }
-
-        #${id} .fbamf-alert-body p + p {
-          margin-top: 8px;
-        }
-
-        #${id} .fbamf-alert-summary {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-          margin-top: 14px;
-        }
-
-        #${id} .fbamf-alert-summary div {
-          padding: 10px;
-          border: 1px solid #d9e1ee;
-          border-radius: 8px;
-          background: #fbfcfe;
-          text-align: left;
-        }
-
-        #${id} .fbamf-alert-summary span,
-        #${id} .fbamf-alert-detail span {
-          display: block;
-          color: #647084;
-          font-size: 11px;
-          font-weight: 800;
-        }
-
-        #${id} .fbamf-alert-summary strong {
-          display: block;
-          margin-top: 4px;
-          color: #152033;
-          font-size: 20px;
-        }
-
-        #${id} .fbamf-alert-detail {
-          margin-top: 10px;
-          padding: 11px;
-          border: 1px solid #d9e1ee;
-          border-radius: 8px;
-          background: #f8fafc;
-          text-align: left;
-        }
-
-        #${id} .fbamf-alert-detail strong {
-          display: block;
-          margin-top: 4px;
-          color: #152033;
-          font-size: 13px;
-          line-height: 1.4;
-        }
-
-        #${id} button {
-          min-width: 120px;
-          min-height: 42px;
-          padding: 0 18px;
-          border: 0;
-          border-radius: 8px;
-          background: #1877f2;
-          color: #fff;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 900;
-        }
-      </style>
-    `;
-
-    const close = () => {
-      div.remove();
-      resolve(true);
-    };
-    div.querySelector("button").addEventListener("click", close);
-    div.addEventListener("click", (event) => {
-      if (event.target.classList.contains("fbamf-alert-backdrop")) close();
-    });
-    document.body.appendChild(div);
-  });
-}
-
-function escapeHtml(value = "") {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-export async function getUserInfoFromUid(uid) {
-  try {
-    const res = await fetchGraphQl({
-      fb_api_req_friendly_name: "ProfileCometHeaderQuery",
-      doc_id: "4159355184147969",
-      variables: {
-        userID: uid,
-        shouldDeferProfilePic: false,
-        useVNextHeader: false,
-        scale: 1.5,
-      },
-    });
-    if (!res) return null;
-
-    const text = await res.text();
-    const json = parseSafe(text?.split("\n")?.[0] || "{}");
-    return {
-      uid: uid,
-      gender: json?.data?.user?.gender,
-      name: json?.data?.user?.name,
-      alternateName: json?.data?.user?.alternate_name,
-      avatar: {
-        id: json?.data?.user?.profile_photo?.id,
-        link: json?.data?.user?.profile_photo?.url,
-        uri: json?.data?.user?.profilePicLarge?.uri,
-      },
-      cover: {
-        id: json?.data?.user?.cover_photo?.photo?.id,
-        link: json?.data?.user?.cover_photo?.photo?.url,
-        uri: json?.data?.user?.cover_photo?.photo?.image?.uri,
-      },
-      raw: json,
-    };
-  } catch (e) {
-    console.log("Cannot get user info", uid, e);
-    return null;
-  }
-}
-export async function fetchGraphQl(
-  params = {},
-  url = "",
-  autoAddParams = true,
-  customParams = {},
-  customHeaders = {}
-) {
-  let query = "";
-  const fb_dtsg = await getFbDtsg();
-  if (!fb_dtsg) {
-    console.error("Missing fb_dtsg token");
-    return null;
-  }
-
-  if (typeof params === "string")
-    query = "&q=" + encodeURIComponent(params) + "&fb_dtsg=" + fb_dtsg;
-  else
-    query = wrapGraphQlParams({
-      ...(autoAddParams
-        ? {
-            dpr: 1,
-            __a: 1,
-            __aaid: 0,
-            __ccg: "GOOD",
-            server_timestamps: true,
-            fb_dtsg: fb_dtsg,
-          }
-        : {}),
-      ...customParams,
-      ...params,
-    });
-
-  const graphQlUrl = url || `${window.location.origin}/api/graphql/`;
-  const res = await fetch(graphQlUrl, {
-    body: query,
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      ...customHeaders,
-    },
-    credentials: "include",
-  });
-
-  return res;
-}
-
-export function wrapGraphQlParams(params = {}) {
-  const formBody = [];
-  for (const property in params) {
-    const encodedKey = encodeURIComponent(property);
-    const value =
-      typeof params[property] === "string"
-        ? params[property]
-        : JSON.stringify(params[property]);
-    const encodedValue = encodeURIComponent(value);
-    formBody.push(encodedKey + "=" + encodedValue);
-  }
-  return formBody.join("&");
-}
-
-export async function getFbDtsg() {
-  return require("DTSG").getToken();
-}
-
-export function parseSafe(str, defaultValue = {}) {
-  try {
-    if (str?.startsWith("for (;;);")) str = str.replace("for (;;);", "");
-    return JSON.parse(str);
-  } catch (e) {
-    console.log("Cannot parse JSON", e, str);
-    return defaultValue;
-  }
-}
-
-export function waitForElements(selector) {
-  return new Promise((resolve, reject) => {
-    onElementsAdded(selector, resolve, true);
-  });
-}
-
-export function onElementsAdded(selector, callback, once) {
-  let nodes = document.querySelectorAll(selector);
-  if (nodes?.length) {
-    callback(nodes);
-    if (once) return;
-  }
-
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (!mutation.addedNodes) return;
-
-      for (let node of mutation.addedNodes) {
-        if (node.nodeType != 1) continue; // only process Node.ELEMENT_NODE
-
-        let n = node.matches(selector)
-          ? [node]
-          : Array.from(node.querySelectorAll(selector));
-
-        if (n?.length) {
-          callback(n);
-          if (once) observer.disconnect();
-        }
-      }
-    });
-  });
-
-  observer.observe(document, {
-    childList: true,
-    subtree: true,
-    attributes: false,
-    characterData: false,
-  });
-
-  // return disconnect function
-  return () => observer.disconnect();
-}
-
-export function closest(element, selector) {
-  let el = element;
-  while (el !== null) {
-    if (el.matches(selector)) return el;
-
-    let found = el.querySelector(selector);
-    if (found) return found;
-
-    el = el.parentElement;
-  }
-  return el;
-}
-
-export function addBorder(ele, color) {
-  ele.style.cssText = color
-    ? `
-    border: 3px solid ${color};
-  `
-    : "";
-}
-
-export function trans({ vi, en }) {
-  return vi; // TODO implement
-}
-
-export function timeToNow(time) {
-  const now = Date.now();
-  const diff = now - time;
-  return formatTimeDiff(diff);
-}
-
-export function formatTimeDiff(diff) {
-  // less than minute
-  if (diff < 60 * 1000)
-    return `${Math.floor(diff / 1000)}${trans({ vi: " giây", en: " sec" })}`;
-  // less than hour
-  if (diff < 60 * 60 * 1000)
-    return `${Math.floor(diff / (60 * 1000))}${trans({
-      vi: " phút",
-      en: " min",
-    })}`;
-  // less than day
-  if (diff < 24 * 60 * 60 * 1000)
-    return `${Math.floor(diff / (60 * 60 * 1000))}${trans({
-      vi: " giờ",
-      en: " hour",
-    })}`;
-  // less than month
-  if (diff < 30 * 24 * 60 * 60 * 1000)
-    return `${Math.floor(diff / (24 * 60 * 60 * 1000))}${trans({
-      vi: " ngày",
-      en: " day",
-    })}`;
-  // less than year
-  if (diff < 365 * 24 * 60 * 60 * 1000)
-    return `${Math.floor(diff / (30 * 24 * 60 * 60 * 1000))}${trans({
-      vi: " tháng",
-      en: " month",
-    })}`;
-  // more than year
-  return `${Math.floor(diff / (365 * 24 * 60 * 60 * 1000))}${trans({
-    vi: " năm",
-    en: " year",
-  })}`;
-}
-const CACHED = {};
-export async function getExtVersion() {
-  try {
-    if (!CACHED.extVersion) {
-      const manifest = await runInBackground("chrome.runtime.getManifest");
-      const ver = manifest?.version;
-      if (ver) CACHED.extVersion = ver;
-    }
-    return CACHED.extVersion || "unknown";
-  } catch (e) {
-    console.log(e);
-    return "unknown";
-  }
-}
-
-export async function trackEvent(scriptId) {
-  try {
-    const uid = getMyUid();
-    // ignore me and my wife
-    if (uid === "100006164142110" || uid === "100004848287494") {
-      console.log("track event", uid, scriptId);
-      return;
-    }
-    const text = await runInBackground("fetch", [
-      "https://useful-script-statistic.glitch.me/count",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          script: "fb_auto_make_friends_" + scriptId,
-          version: await getExtVersion(),
-          uid: uid,
-        }),
-      },
+function createAccount(string $uid): array
+{
+    $time = now();
+    $stmt = db()->prepare("
+        INSERT INTO accounts (uid, type, count, end_time, note, created_at, updated_at, last_used_at)
+        VALUES (:uid, 'trial', :count, NULL, '', :created_at, :updated_at, NULL)
+    ");
+    $stmt->execute([
+        ':uid' => $uid,
+        ':count' => DEFAULT_TRIAL_COUNT,
+        ':created_at' => $time,
+        ':updated_at' => $time,
     ]);
-    return text;
-  } catch (e) {
-    return null;
-  }
+
+    addLog("Tạo tài khoản dùng thử cho UID {$uid}");
+    return getAccount($uid);
 }
 
-const URL = "https://cdn.topid.vn/auto-ketban/api.php?uid=";
-export async function getVIP(uid = getMyUid()) {
-  try {
-    const res = await runInBackground("fetch", [URL + uid]);
-    const json = parseSafe(res);
-    return json;
-  } catch (e) {
-    return null;
-  }
+function getOrCreateAccount(string $uid): array
+{
+    $account = getAccount($uid);
+    if ($account) {
+        return $account;
+    }
+
+    return createAccount($uid);
 }
 
-export async function countUp(uid = getMyUid()) {
-  try {
-    const res = await runInBackground("fetch", [URL + uid, { method: "POST" }]);
-    console.log(res);
-  } catch (e) {
-    console.log(e);
-  }
+function updateTrialDefaultIfNeeded(array $account): array
+{
+    if (($account['type'] ?? 'trial') !== 'trial') {
+        return $account;
+    }
+
+    if ((int) ($account['count'] ?? 0) !== 20) {
+        return $account;
+    }
+
+    $stmt = db()->prepare('UPDATE accounts SET count = :count, updated_at = :updated_at WHERE uid = :uid');
+    $stmt->execute([
+        ':count' => DEFAULT_TRIAL_COUNT,
+        ':updated_at' => now(),
+        ':uid' => $account['uid'],
+    ]);
+    addLog("Nâng lượt mặc định UID {$account['uid']} lên " . DEFAULT_TRIAL_COUNT);
+
+    return getAccount($account['uid']);
 }
 
-export function getConfig() {
-  return new Promise(async (resolve) => {
-    const id = "fb-auto-make-friends-config";
-    const fbUser = getCurrentFacebookUser();
-    const div = document.createElement("div");
-    div.id = id;
-    div.innerHTML = `
-      <div class="fbamf-dialog" role="dialog" aria-modal="true" aria-labelledby="fbamf-title">
-        <div class="fbamf-header">
-          <div class="fbamf-logo-wrap">
-            <div class="fbamf-logo">T</div>
-            <img class="fbamf-avatar" src="${fbUser.avatar}" alt="" />
-          </div>
-          <div class="fbamf-heading">
-            <p class="fbamf-eyebrow">TOPID Assistant</p>
-            <h2 id="fbamf-title">Tự động kết bạn</h2>
-            <div class="fbamf-user">
-              <strong>${fbUser.name}</strong>
-              <span>UID: ${fbUser.uid}</span>
-            </div>
-          </div>
-        </div>
+function publicAccount(array $account): array
+{
+    $type = $account['type'] ?? 'trial';
 
-        <div class="fbamf-account-card">
-          <div>
-            <span>Trạng thái tài khoản</span>
-            <h3 class="fbamf-status">Đang kiểm tra tài khoản...</h3>
-          </div>
-          <small>Realtime</small>
-        </div>
+    return [
+        'uid' => $account['uid'],
+        'type' => $type,
+        'count' => (int) ($account['count'] ?? 0),
+        'endTime' => $type === 'vip' ? (int) ($account['end_time'] ?? 0) : null,
+    ];
+}
 
-        <div class="fbamf-fields">
-          <label class="fbamf-field">
-            <span>Giới tính mục tiêu</span>
-            <small>Chọn nhóm người muốn ưu tiên gửi lời mời.</small>
-            <select id="gender">
-              <option value="0">Mọi giới tính</option>
-              <option value="1">Nam</option>
-              <option value="2">Nữ</option>
-            </select>
-          </label>
+function addLog(string $message): void
+{
+    $stmt = db()->prepare('INSERT INTO logs (time, message, ip) VALUES (:time, :message, :ip)');
+    $stmt->execute([
+        ':time' => now(),
+        ':message' => $message,
+        ':ip' => $_SERVER['REMOTE_ADDR'] ?? '',
+    ]);
 
-          <label class="fbamf-field">
-            <span>Bạn chung tối thiểu</span>
-            <small>Lọc người có số bạn chung thấp hơn ngưỡng này.</small>
-            <input id="mutualMin" min="0" type="number" />
-          </label>
+    db()->exec('DELETE FROM logs WHERE id NOT IN (SELECT id FROM logs ORDER BY id DESC LIMIT 200)');
+}
 
-          <label class="fbamf-field">
-            <span>Số lời mời muốn gửi</span>
-            <small>Tool sẽ tự dừng khi đạt đủ số lời mời.</small>
-            <input id="limit" min="0" type="number" />
-          </label>
+function allAccounts(): array
+{
+    $stmt = db()->query('SELECT * FROM accounts ORDER BY updated_at DESC, created_at DESC');
+    return $stmt->fetchAll();
+}
 
-          <div class="fbamf-field">
-            <span>Khoảng chờ giữa mỗi lượt</span>
-            <small>Khoảng nghỉ ngẫu nhiên giúp thao tác tự nhiên hơn.</small>
-            <div id="wait" class="fbamf-range">
-              <input type="number" min="0" id="waitMin" />
-              <span>đến</span>
-              <input type="number" min="0" id="waitMax" />
-              <small>giây</small>
-            </div>
-          </div>
-        </div>
+function recentLogs(int $limit = 20): array
+{
+    $stmt = db()->prepare('SELECT * FROM logs ORDER BY id DESC LIMIT :limit');
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
 
-        <div class="fbamf-actions">
-          <button id="cancel" class="fbamf-button fbamf-button-secondary">Huỷ</button>
-          <button id="start" class="fbamf-button fbamf-button-primary">Bắt đầu</button>
-        </div>
+function isAdmin(): bool
+{
+    return ($_SESSION['topid_admin'] ?? false) === true;
+}
+
+function requireAdmin(): void
+{
+    if (!isAdmin()) {
+        renderLogin();
+        exit;
+    }
+}
+
+function csrfToken(): string
+{
+    if (empty($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(24));
+    }
+
+    return $_SESSION['csrf'];
+}
+
+function checkCsrf(): void
+{
+    $token = $_POST['csrf'] ?? '';
+    if (!hash_equals((string) ($_SESSION['csrf'] ?? ''), (string) $token)) {
+        http_response_code(403);
+        exit('CSRF token không hợp lệ.');
+    }
+}
+
+function e($value): string
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+}
+
+function formatDateTime($timestamp): string
+{
+    if (!$timestamp) {
+        return '-';
+    }
+
+    return date('d/m/Y H:i', (int) $timestamp);
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    jsonResponse(['ok' => true]);
+}
+
+if (isset($_GET['uid'])) {
+    try {
+        $uid = cleanUid((string) $_GET['uid']);
+        if ($uid === '') {
+            jsonResponse(['error' => 'invalid_uid', 'endTime' => null, 'count' => 0], 400);
+        }
+
+        $account = getOrCreateAccount($uid);
+        $account = updateTrialDefaultIfNeeded($account);
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (($account['type'] ?? 'trial') !== 'vip') {
+                $stmt = db()->prepare("
+                    UPDATE accounts
+                    SET count = MAX(count - 1, 0), last_used_at = :last_used_at, updated_at = :updated_at
+                    WHERE uid = :uid
+                ");
+            } else {
+                $stmt = db()->prepare("
+                    UPDATE accounts
+                    SET last_used_at = :last_used_at, updated_at = :updated_at
+                    WHERE uid = :uid
+                ");
+            }
+
+            $time = now();
+            $stmt->execute([
+                ':last_used_at' => $time,
+                ':updated_at' => $time,
+                ':uid' => $uid,
+            ]);
+            addLog("Extension ghi nhận 1 lượt dùng cho UID {$uid}");
+            $account = getAccount($uid);
+        }
+
+        jsonResponse(publicAccount($account));
+    } catch (Throwable $e) {
+        jsonResponse(['error' => 'server_error', 'message' => $e->getMessage(), 'endTime' => null, 'count' => 0], 500);
+    }
+}
+
+if (($_POST['action'] ?? '') === 'login') {
+    if (hash_equals(ADMIN_PASSWORD, (string) ($_POST['password'] ?? ''))) {
+        $_SESSION['topid_admin'] = true;
+        csrfToken();
+        header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+        exit;
+    }
+
+    renderLogin('Mật khẩu không đúng.');
+    exit;
+}
+
+if (($_GET['logout'] ?? '') === '1') {
+    session_destroy();
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+    exit;
+}
+
+requireAdmin();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    checkCsrf();
+    $action = $_POST['action'] ?? '';
+    $uid = cleanUid((string) ($_POST['uid'] ?? ''));
+
+    if ($uid !== '') {
+        getOrCreateAccount($uid);
+
+        if ($action === 'save') {
+            $type = ($_POST['type'] ?? '') === 'vip' ? 'vip' : 'trial';
+            $count = max(0, (int) ($_POST['count'] ?? 0));
+            $until = strtotime((string) ($_POST['vipUntil'] ?? '') . ' 23:59:59');
+            $endTime = $type === 'vip' ? ($until ?: strtotime('+30 days')) : null;
+
+            $stmt = db()->prepare("
+                UPDATE accounts
+                SET type = :type, count = :count, end_time = :end_time, note = :note, updated_at = :updated_at
+                WHERE uid = :uid
+            ");
+            $stmt->execute([
+                ':type' => $type,
+                ':count' => $count,
+                ':end_time' => $endTime,
+                ':note' => trim((string) ($_POST['note'] ?? '')),
+                ':updated_at' => now(),
+                ':uid' => $uid,
+            ]);
+            addLog("Cập nhật UID {$uid}");
+        }
+
+        if ($action === 'extend') {
+            $account = getAccount($uid);
+            $days = max(1, (int) ($_POST['days'] ?? 30));
+            $base = max(now(), (int) ($account['end_time'] ?? 0));
+            $stmt = db()->prepare("
+                UPDATE accounts
+                SET type = 'vip', end_time = :end_time, updated_at = :updated_at
+                WHERE uid = :uid
+            ");
+            $stmt->execute([
+                ':end_time' => $base + ($days * 86400),
+                ':updated_at' => now(),
+                ':uid' => $uid,
+            ]);
+            addLog("Gia hạn UID {$uid} thêm {$days} ngày");
+        }
+
+        if ($action === 'add_count') {
+            $amount = max(1, (int) ($_POST['amount'] ?? 10));
+            $stmt = db()->prepare("
+                UPDATE accounts
+                SET type = 'trial', count = count + :amount, end_time = NULL, updated_at = :updated_at
+                WHERE uid = :uid
+            ");
+            $stmt->execute([
+                ':amount' => $amount,
+                ':updated_at' => now(),
+                ':uid' => $uid,
+            ]);
+            addLog("Cộng {$amount} lượt cho UID {$uid}");
+        }
+
+        if ($action === 'delete') {
+            $stmt = db()->prepare('DELETE FROM accounts WHERE uid = :uid');
+            $stmt->execute([':uid' => $uid]);
+            addLog("Xoá UID {$uid}");
+        }
+    }
+
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+    exit;
+}
+
+renderAdmin();
+
+function renderLogin(string $error = ''): void
+{
+    header('Content-Type: text/html; charset=utf-8');
+    ?>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TOPID Login</title>
+  <style><?php echo baseCss(); ?></style>
+</head>
+<body>
+  <main class="login">
+    <form method="post" class="panel">
+      <div class="brand">T</div>
+      <h1>TOPID Admin</h1>
+      <p>Đăng nhập để quản lý UID, lượt dùng thử và thời hạn VIP.</p>
+      <?php if ($error): ?><div class="alert danger"><?php echo e($error); ?></div><?php endif; ?>
+      <input type="hidden" name="action" value="login">
+      <label>Mật khẩu quản trị</label>
+      <input type="password" name="password" autofocus required>
+      <button type="submit">Đăng nhập</button>
+    </form>
+  </main>
+</body>
+</html>
+    <?php
+}
+
+function renderAdmin(): void
+{
+    header('Content-Type: text/html; charset=utf-8');
+    $accounts = allAccounts();
+    $logs = recentLogs();
+    $total = count($accounts);
+    $vip = count(array_filter($accounts, function ($account) {
+        return ($account['type'] ?? '') === 'vip';
+    }));
+    $trial = $total - $vip;
+    ?>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TOPID Account Manager</title>
+  <style><?php echo baseCss(); ?></style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p>TOPID Extension</p>
+      <h1>Quản lý tài khoản theo UID</h1>
+    </div>
+    <a class="logout" href="?logout=1">Đăng xuất</a>
+  </header>
+
+  <main class="wrap">
+    <section class="stats">
+      <div><span>Tổng UID</span><strong><?php echo $total; ?></strong></div>
+      <div><span>VIP</span><strong><?php echo $vip; ?></strong></div>
+      <div><span>Dùng thử</span><strong><?php echo $trial; ?></strong></div>
+    </section>
+
+    <section class="panel">
+      <h2>Thêm hoặc cập nhật UID</h2>
+      <form method="post" class="grid-form">
+        <input type="hidden" name="csrf" value="<?php echo e(csrfToken()); ?>">
+        <input type="hidden" name="action" value="save">
+        <label>UID Facebook<input name="uid" inputmode="numeric" required placeholder="1000..."></label>
+        <label>Loại tài khoản
+          <select name="type">
+            <option value="trial">Dùng thử theo lượt</option>
+            <option value="vip">VIP theo hạn</option>
+          </select>
+        </label>
+        <label>Lượt dùng thử<input type="number" min="0" name="count" value="<?php echo DEFAULT_TRIAL_COUNT; ?>"></label>
+        <label>VIP đến ngày<input type="date" name="vipUntil" value="<?php echo e(date('Y-m-d', strtotime('+30 days'))); ?>"></label>
+        <label class="span-2">Ghi chú<input name="note" placeholder="Tên khách, gói mua, nguồn thanh toán..."></label>
+        <button type="submit">Lưu UID</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Danh sách UID</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>UID</th>
+              <th>Gói</th>
+              <th>Lượt</th>
+              <th>Hết hạn</th>
+              <th>Dùng gần nhất</th>
+              <th>Ghi chú</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+          <?php foreach ($accounts as $account): ?>
+            <tr>
+              <td><strong><?php echo e($account['uid']); ?></strong></td>
+              <td><span class="badge <?php echo ($account['type'] ?? '') === 'vip' ? 'vip' : 'trial'; ?>"><?php echo e(strtoupper($account['type'] ?? 'trial')); ?></span></td>
+              <td><?php echo (int) ($account['count'] ?? 0); ?></td>
+              <td><?php echo e(formatDateTime($account['end_time'] ?? null)); ?></td>
+              <td><?php echo e(formatDateTime($account['last_used_at'] ?? null)); ?></td>
+              <td><?php echo e($account['note'] ?? ''); ?></td>
+              <td class="actions">
+                <form method="post">
+                  <input type="hidden" name="csrf" value="<?php echo e(csrfToken()); ?>">
+                  <input type="hidden" name="action" value="extend">
+                  <input type="hidden" name="uid" value="<?php echo e($account['uid']); ?>">
+                  <input type="number" name="days" min="1" value="30" title="Số ngày">
+                  <button>Gia hạn</button>
+                </form>
+                <form method="post">
+                  <input type="hidden" name="csrf" value="<?php echo e(csrfToken()); ?>">
+                  <input type="hidden" name="action" value="add_count">
+                  <input type="hidden" name="uid" value="<?php echo e($account['uid']); ?>">
+                  <input type="number" name="amount" min="1" value="100" title="Số lượt">
+                  <button>Cộng lượt</button>
+                </form>
+                <form method="post" onsubmit="return confirm('Xoá UID này?')">
+                  <input type="hidden" name="csrf" value="<?php echo e(csrfToken()); ?>">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="uid" value="<?php echo e($account['uid']); ?>">
+                  <button class="danger-btn">Xoá</button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+          <?php if (!$accounts): ?>
+            <tr><td colspan="7" class="empty">Chưa có UID nào. Extension sẽ tự tạo UID dùng thử 100 lượt khi khách bắt đầu dùng.</td></tr>
+          <?php endif; ?>
+          </tbody>
+        </table>
       </div>
+    </section>
 
-      <style>
-        #${id} {
-          position: fixed;
-          top: 0;
-          left: 0;
-          z-index: 999999999999;
-          background: rgba(15, 23, 42, 0.58);
-          width: 100vw;
-          height: 100vh;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 20px;
-          backdrop-filter: blur(6px);
-        }
-
-        #${id} * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-
-        #${id} .fbamf-dialog {
-          width: min(520px, calc(100vw - 32px));
-          background: #fff;
-          border: 1px solid #d9e1ee;
-          border-radius: 12px;
-          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
-          overflow: hidden;
-        }
-
-        #${id} .fbamf-header {
-          display: flex;
-          align-items: flex-start;
-          gap: 14px;
-          padding: 20px;
-          background: linear-gradient(135deg, rgba(24, 119, 242, 0.12), rgba(24, 160, 88, 0.1));
-          border-bottom: 1px solid #d9e1ee;
-        }
-
-        #${id} .fbamf-logo-wrap {
-          position: relative;
-          flex: 0 0 58px;
-          width: 58px;
-          height: 58px;
-        }
-
-        #${id} .fbamf-logo {
-          display: grid;
-          width: 44px;
-          height: 44px;
-          place-items: center;
-          border-radius: 10px;
-          background: #1877f2;
-          color: #fff;
-          font-size: 20px;
-          font-weight: 800;
-        }
-
-        #${id} .fbamf-avatar {
-          position: absolute;
-          right: 0;
-          bottom: 0;
-          width: 30px;
-          height: 30px;
-          border: 3px solid #fff;
-          border-radius: 999px;
-          background: #eef4ff;
-          object-fit: cover;
-          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
-        }
-
-        #${id} .fbamf-heading {
-          min-width: 0;
-          flex: 1;
-        }
-
-        #${id} .fbamf-eyebrow {
-          color: #647084;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0;
-          text-transform: uppercase;
-        }
-
-        #${id} h2 {
-          color: #152033;
-          font-size: 22px;
-          line-height: 1.2;
-          margin-top: 3px;
-        }
-
-        #${id} .fbamf-user {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px 10px;
-          margin-top: 8px;
-          color: #647084;
-          font-size: 13px;
-        }
-
-        #${id} .fbamf-user strong {
-          color: #152033;
-          font-size: 13px;
-        }
-
-        #${id} .fbamf-account-card {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-          margin: 16px 20px 0;
-          padding: 14px;
-          border: 1px solid #d9e1ee;
-          border-radius: 10px;
-          background: #f8fafc;
-        }
-
-        #${id} .fbamf-account-card span {
-          display: block;
-          margin-bottom: 5px;
-          color: #647084;
-          font-size: 11px;
-          font-weight: 900;
-          text-transform: uppercase;
-        }
-
-        #${id} .fbamf-account-card small {
-          flex: 0 0 auto;
-          padding: 4px 8px;
-          border-radius: 999px;
-          background: #eef4ff;
-          color: #175cd3;
-          font-size: 11px;
-          font-weight: 900;
-        }
-
-        #${id} .fbamf-status {
-          color: #152033;
-          font-size: 14px;
-          font-weight: 700;
-          line-height: 1.4;
-        }
-
-        #${id} .fbamf-fields {
-          display: grid;
-          gap: 10px;
-          padding: 16px 20px 20px;
-        }
-
-        #${id} .fbamf-field {
-          display: grid;
-          gap: 6px;
-          padding: 12px;
-          border: 1px solid #e4eaf3;
-          border-radius: 10px;
-          background: #fff;
-        }
-
-        #${id} .fbamf-field > span {
-          color: #3d4b63;
-          font-size: 13px;
-          font-weight: 700;
-        }
-
-        #${id} .fbamf-field > small {
-          color: #647084;
-          font-size: 12px;
-          line-height: 1.35;
-        }
-
-        #${id} input,
-        #${id} select {
-          width: 100%;
-          min-height: 42px;
-          padding: 9px 11px;
-          border: 1px solid #cfd8e6;
-          border-radius: 8px;
-          background: #fff;
-          color: #152033;
-          font-size: 14px;
-          outline: none;
-          transition: border-color 0.18s ease, box-shadow 0.18s ease;
-        }
-
-        #${id} input:focus,
-        #${id} select:focus {
-          border-color: #1877f2;
-          box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.15);
-        }
-
-        #${id} .fbamf-range {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
-          align-items: center;
-          gap: 8px;
-        }
-
-        #${id} .fbamf-range span,
-        #${id} .fbamf-range small {
-          color: #647084;
-          font-size: 13px;
-          font-weight: 600;
-        }
-
-        #${id} .fbamf-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 10px;
-          padding: 14px 20px 18px;
-          border-top: 1px solid #d9e1ee;
-          background: #f8fafc;
-        }
-
-        #${id} .fbamf-button {
-          min-height: 40px;
-          padding: 0 16px;
-          cursor: pointer;
-          border-radius: 8px;
-          border: 1px solid transparent;
-          font-size: 14px;
-          font-weight: 800;
-          transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-        }
-
-        #${id} .fbamf-button:hover {
-          transform: translateY(-1px);
-        }
-
-        #${id} .fbamf-button-secondary {
-          background: #fff;
-          border-color: #cfd8e6;
-          color: #3d4b63;
-        }
-
-        #${id} .fbamf-button-primary {
-          background: #1877f2;
-          color: #fff;
-          box-shadow: 0 10px 22px rgba(24, 119, 242, 0.24);
-        }
-
-        #${id} .green {
-          background: #eaf8f0 !important;
-          border-color: #bde8ce !important;
-          color: #137a43 !important;
-        }
-
-        #${id} .red {
-          background: #fff0f0 !important;
-          border-color: #ffc9c9 !important;
-          color: #b42318 !important;
-        }
-
-        #${id} .fbamf-account-card .green,
-        #${id} .fbamf-account-card .red {
-          padding: 0 !important;
-          border: 0 !important;
-          background: transparent !important;
-        }
-      </style>
-    `;
-
-    document.body.appendChild(div);
-
-    const countLeftDiv = div.querySelector("h3");
-    const selectGender = div.querySelector("#gender");
-    const inputMutualMin = div.querySelector("#mutualMin");
-    const inputLimit = div.querySelector("#limit");
-    const inputWaitMin = div.querySelector("#waitMin");
-    const inputWaitMax = div.querySelector("#waitMax");
-
-    selectGender.value = await getCacheBG("gender", "0");
-    inputMutualMin.value = await getCacheBG("mutualMin", "0");
-    inputLimit.value = await getCacheBG("limit", "50");
-    inputWaitMin.value = await getCacheBG("waitMin", "5");
-    inputWaitMax.value = await getCacheBG("waitMax", "20");
-
-    const startBtn = div.querySelector("#start");
-    const cancelBtn = div.querySelector("#cancel");
-
-    cancelBtn.addEventListener("click", () => {
-      div.remove();
-      resolve(false);
-    });
-
-    startBtn.innerText = "Đang tải...";
-
-    // check VIP
-    const buyVIPURL = "https://www.facebook.com/devqanh22";
-    const VIP = await getVIP();
-    // const VIP = {
-    //   endTime: new Date("2025-01-01").getTime() / 1000,
-    // };
-    console.log(VIP);
-
-    const connectFail = VIP == null;
-
-    const trialDefaultCount = 100;
-    const endTimeValue = Number(VIP?.endTime || 0);
-    const isTrial = VIP?.type === "trial" || !endTimeValue;
-    const countLeft = isTrial
-      ? Number.isFinite(Number(VIP?.count))
-        ? Number(VIP.count)
-        : trialDefaultCount
-      : Infinity;
-
-    const expiredAt = new Date(endTimeValue * 1000);
-    const isExpired =
-      countLeft <= 0 ||
-      (!isTrial && expiredAt.getTime() < new Date().getTime());
-
-    if (connectFail) {
-      trackEvent("connectFail");
-
-      countLeftDiv.innerText =
-        "Không kết nối được máy chủ. Vui lòng bấm Huỷ rồi thử lại";
-      countLeftDiv.classList.add("red");
-    } else if (isTrial) {
-      trackEvent("trial:" + countLeft);
-
-      countLeftDiv.innerText =
-        "Bạn còn " + countLeft + " lượt kết bạn (dùng thử)";
-
-      if (countLeft <= 0) {
-        countLeftDiv.classList.add("red");
-      } else {
-        countLeftDiv.classList.add("green");
-        inputLimit.max = countLeft;
-        if (inputLimit.value > countLeft) inputLimit.value = countLeft;
-      }
-    } else {
-      trackEvent("VIP:" + expiredAt.getTime());
-
-      if (isExpired) {
-        countLeftDiv.innerText =
-          "Tài khoản hết hạn " +
-          formatTimeDiff(new Date() - expiredAt) +
-          " trước (" +
-          expiredAt.toLocaleString() +
-          ")";
-        countLeftDiv.classList.add("red");
-      } else {
-        countLeftDiv.innerText =
-          "Tài khoản VIP còn " + formatTimeDiff(expiredAt - new Date());
-        countLeftDiv.classList.add("green");
-      }
-    }
-
-    if (connectFail) {
-      // nothing
-      startBtn.innerText = "Trợ giúp";
-      startBtn.addEventListener("click", () => {
-        trackEvent("needHelp");
-        window.open(buyVIPURL, "_blank");
-      });
-    } else if (isExpired) {
-      startBtn.innerText = "Mua thêm lượt";
-      startBtn.addEventListener("click", () => {
-        trackEvent("buyMore");
-        window.open(buyVIPURL, "_blank");
-      });
-    } else {
-      startBtn.innerText = "Bắt đầu";
-      startBtn.addEventListener("click", () => {
-        trackEvent("start");
-        let gender = selectGender.value;
-        let mutualMin = inputMutualMin.value;
-        let limit = Math.min(countLeft, inputLimit.value);
-        let waitMin = inputWaitMin.value;
-        let waitMax = inputWaitMax.value;
-
-        setCacheBG("gender", gender);
-        setCacheBG("mutualMin", mutualMin);
-        setCacheBG("limit", limit);
-        setCacheBG("waitMin", waitMin);
-        setCacheBG("waitMax", waitMax);
-
-        div.remove();
-
-        if (gender == 0) {
-        } else if (gender == 1) gender = "MALE";
-        else if (gender == 2) gender = "FEMALE";
-
-        if (limit <= 0) limit = Infinity;
-
-        resolve({ gender, mutualMin, limit, waitMin, waitMax });
-      });
-    }
-  });
+    <section class="panel">
+      <h2>Nhật ký gần đây</h2>
+      <ul class="logs">
+        <?php foreach ($logs as $log): ?>
+          <li><time><?php echo e(formatDateTime($log['time'] ?? null)); ?></time><?php echo e($log['message'] ?? ''); ?></li>
+        <?php endforeach; ?>
+        <?php if (!$logs): ?><li>Chưa có nhật ký.</li><?php endif; ?>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
+    <?php
 }
 
-export function rand(min, max) {
-  return Math.random() * (max - min) + min;
+function baseCss(): string
+{
+    return <<<'CSS'
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{color:inherit}.login{min-height:100vh;display:grid;place-items:center;padding:24px}.panel{background:#fff;border:1px solid #dbe3ef;border-radius:12px;box-shadow:0 18px 45px rgba(25,43,77,.1)}.login .panel{width:min(420px,100%);padding:28px}.brand{display:grid;place-items:center;width:48px;height:48px;border-radius:10px;background:#1877f2;color:#fff;font-size:22px;font-weight:900}.login h1,.panel h2{margin:14px 0 8px}.login p{margin:0 0 18px;color:#667085;line-height:1.5}label{display:grid;gap:7px;color:#344054;font-size:14px;font-weight:700}input,select{width:100%;min-height:42px;padding:9px 11px;border:1px solid #cfd8e6;border-radius:8px;background:#fff;color:#172033;font-size:14px}button{min-height:40px;padding:0 14px;border:0;border-radius:8px;background:#1877f2;color:#fff;font-weight:800;cursor:pointer}.login button{width:100%;margin-top:14px}.alert{padding:10px 12px;border-radius:8px;margin-bottom:12px}.danger{background:#fff1f0;color:#b42318;border:1px solid #ffc9c9}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 28px;background:#fff;border-bottom:1px solid #dbe3ef}.topbar p{margin:0;color:#667085;font-size:13px;font-weight:800;text-transform:uppercase}.topbar h1{margin:2px 0 0;font-size:24px}.logout{padding:10px 14px;border:1px solid #cfd8e6;border-radius:8px;text-decoration:none;font-weight:800}.wrap{width:min(1180px,calc(100% - 32px));margin:24px auto 40px;display:grid;gap:18px}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.stats div{padding:18px;background:#fff;border:1px solid #dbe3ef;border-radius:12px}.stats span{display:block;color:#667085;font-size:13px;font-weight:700}.stats strong{display:block;margin-top:6px;font-size:28px}.panel{padding:20px}.panel h2{font-size:18px}.grid-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:end}.span-2{grid-column:span 2}.grid-form button{justify-self:start}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:980px}th,td{padding:12px;border-bottom:1px solid #e5ebf3;text-align:left;font-size:14px;vertical-align:top}th{color:#667085;font-size:12px;text-transform:uppercase}.badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900}.badge.vip{background:#eaf8f0;color:#137a43}.badge.trial{background:#eef4ff;color:#175cd3}.actions{display:flex;flex-wrap:wrap;gap:8px}.actions form{display:flex;gap:6px}.actions input{width:74px;min-height:36px}.actions button{min-height:36px}.danger-btn{background:#d92d20}.empty{text-align:center;color:#667085}.logs{margin:0;padding:0;list-style:none;display:grid;gap:8px}.logs li{display:flex;gap:10px;color:#344054}.logs time{width:130px;flex:0 0 130px;color:#667085}@media (max-width:760px){.topbar{align-items:flex-start;flex-direction:column}.stats,.grid-form{grid-template-columns:1fr}.span-2{grid-column:auto}.actions{display:grid}.actions form{width:100%}}
+CSS;
 }
