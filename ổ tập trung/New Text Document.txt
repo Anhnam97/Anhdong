@@ -2,88 +2,51 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>TOPID ASSISTANT</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: #0b0e14;
+      width: 360px;
+      padding: 12px;
       font-family: 'Segoe UI', Arial, sans-serif;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding: 20px 10px;
-    }
-    .container {
-      max-width: 420px;
-      width: 100%;
       background: #0b0e14;
-      border-radius: 16px;
-      padding: 16px;
+      color: #eee;
+      margin: 0;
     }
-
-    /* ===== PANEL LIVE ===== */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .header h1 {
-      font-size: 18px;
-      font-weight: 700;
-      color: #fff;
-    }
+    .header { display: flex; justify-content: space-between; align-items: center; }
+    .header h3 { margin: 0; color: #4fc3f7; }
     .live-badge {
       background: #00c853;
       color: #fff;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 10px;
+      font-size: 10px;
+      padding: 2px 8px;
       border-radius: 12px;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
     }
     .live-badge::before {
       content: '';
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       background: #fff;
       border-radius: 50%;
       animation: pulse 1.2s infinite;
     }
     @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.2; }
-      100% { opacity: 1; }
+      0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; }
     }
-    .sub-title {
-      font-size: 13px;
-      color: #aaa;
-      margin-top: 2px;
-      margin-bottom: 14px;
-    }
+    .sub-title { font-size: 12px; color: #aaa; margin: 4px 0 10px; }
     .progress-block {
       background: #151c26;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 14px;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
     }
-    .progress-top {
-      display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .progress-top .percent {
-      color: #4fc3f7;
-    }
+    .progress-top { display: flex; justify-content: space-between; font-size: 13px; }
     .progress-bar-bg {
       background: #2a3440;
       height: 6px;
       border-radius: 4px;
-      margin: 10px 0 8px;
+      margin: 8px 0;
     }
     .progress-bar-fill {
       height: 100%;
@@ -92,238 +55,134 @@
       border-radius: 4px;
       transition: width 0.3s;
     }
-    .progress-bottom {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: #b0bec5;
-    }
-    .progress-bottom .remain {
-      color: #fff;
-      font-weight: 600;
-    }
-    .waiting-box {
-      background: #1e2733;
-      border-radius: 8px;
-      padding: 8px 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-      font-size: 13px;
-    }
-    .waiting-box .wait-time {
-      color: #4fc3f7;
-      font-weight: 700;
-      font-size: 16px;
-    }
+    .progress-bottom { display: flex; justify-content: space-between; font-size: 11px; color: #b0bec5; }
+    .progress-bottom .remain { color: #fff; font-weight: 600; }
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 14px;
+      gap: 6px;
+      margin-bottom: 10px;
     }
     .stat-item {
       background: #151c26;
-      border-radius: 10px;
-      padding: 12px 6px;
+      border-radius: 8px;
+      padding: 8px;
       text-align: center;
     }
-    .stat-item .num {
-      font-size: 22px;
-      font-weight: 700;
-    }
-    .stat-item .label {
-      font-size: 11px;
-      color: #90a4ae;
-      margin-top: 2px;
-    }
-    .config-section, .activity-section {
-      background: #151c26;
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 14px;
-    }
-    .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #b0bec5;
-      margin-bottom: 6px;
-    }
+    .stat-item .num { font-size: 18px; font-weight: 700; }
+    .stat-item .label { font-size: 10px; color: #90a4ae; }
     .config-row {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      font-size: 13px;
+      background: #151c26;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
       color: #cfd8dc;
+      margin-bottom: 10px;
     }
-    .config-row strong {
-      color: #fff;
-    }
-    .activity-list {
-      list-style: none;
-      max-height: 120px;
+    .config-row strong { color: #fff; }
+    .activity {
+      background: #151c26;
+      border-radius: 8px;
+      padding: 8px 12px;
+      max-height: 80px;
       overflow-y: auto;
-      font-size: 13px;
+      font-size: 12px;
       color: #cfd8dc;
+      margin-bottom: 10px;
     }
-    .activity-list li {
-      padding: 4px 0;
-      border-bottom: 1px solid #1e2733;
-    }
-    .activity-list li:last-child { border-bottom: none; }
-    .action-buttons {
+    .activity div { padding: 2px 0; border-bottom: 1px solid #1e2733; }
+    .activity div:last-child { border-bottom: none; }
+    .actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
     }
-    .action-buttons button {
+    .actions button {
       flex: 1;
       background: #1e2733;
       border: none;
       color: #fff;
-      padding: 10px 0;
-      border-radius: 8px;
+      padding: 8px 0;
+      border-radius: 6px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
     }
-    .action-buttons .btn-stop {
-      background: #d32f2f;
-    }
-
-    /* ===== PANEL STOPPED ===== */
-    #stoppedPanel {
-      display: none;
+    .actions .btn-stop { background: #d32f2f; }
+    .actions .btn-config { background: #2a3440; }
+    .hidden { display: none; }
+    .stop-panel {
       background: #151c26;
-      border-radius: 12px;
-      padding: 20px 16px;
+      border-radius: 10px;
+      padding: 12px;
       text-align: center;
     }
-    #stoppedPanel .stop-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #ff5252;
-    }
-    #stoppedPanel .stop-sub {
-      color: #b0bec5;
-      font-size: 14px;
-      margin: 4px 0 16px;
-    }
+    .stop-panel .stop-title { font-size: 18px; font-weight: 700; color: #ff5252; }
+    .stop-panel .stop-sub { color: #b0bec5; font-size: 13px; margin: 4px 0 12px; }
     .stop-stats {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 16px;
+      gap: 6px;
+      margin-bottom: 10px;
     }
-    .stop-stat-item {
-      background: #1e2733;
-      border-radius: 8px;
-      padding: 10px;
-    }
-    .stop-stat-item .num {
-      font-size: 24px;
-      font-weight: 700;
-      color: #fff;
-    }
-    .stop-stat-item .label {
-      font-size: 12px;
-      color: #90a4ae;
-    }
-    .stop-config {
-      background: #1e2733;
-      border-radius: 8px;
-      padding: 10px;
-      font-size: 13px;
-      color: #cfd8dc;
-      margin-bottom: 16px;
-    }
-    .stop-config strong { color: #fff; }
-    .btn-done {
-      background: #4fc3f7;
-      border: none;
-      color: #0b0e14;
-      padding: 10px 0;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 16px;
-      width: 100%;
-      cursor: pointer;
-    }
+    .stop-stat { background: #1e2733; border-radius: 6px; padding: 6px; }
+    .stop-stat .num { font-size: 18px; font-weight: 700; }
+    .stop-stat .label { font-size: 10px; color: #90a4ae; }
   </style>
 </head>
 <body>
-<div class="container">
+<div id="mainPanel">
+  <div class="header">
+    <h3>TOPID ASSISTANT</h3>
+    <span class="live-badge" id="liveBadge">Live</span>
+  </div>
+  <div class="sub-title">Đang tự động kết bạn</div>
 
-  <!-- PANEL ĐANG CHẠY -->
-  <div id="livePanel">
-    <div class="header">
-      <h1>TOPID ASSISTANT</h1>
-      <span class="live-badge" id="liveBadge">Live</span>
+  <div class="progress-block">
+    <div class="progress-top">
+      <span id="progressText">0%</span>
+      <span id="percentText">0%</span>
     </div>
-    <div class="sub-title">Đang tự động kết bạn</div>
-
-    <div class="progress-block">
-      <div class="progress-top">
-        <span id="progressText">0%</span>
-        <span class="percent" id="percentText">0%</span>
-      </div>
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
-      <div class="progress-bottom">
-        <span>Còn lại <span class="remain" id="remainCount">50</span></span>
-        <span>Đã gửi <span id="sentDisplay">0</span></span>
-      </div>
-      <div class="waiting-box">
-        <span>Đang chờ trước lượt tiếp theo</span>
-        <span class="wait-time" id="waitTime">--</span>
-      </div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-item"><div class="num" id="sentStat">0</div><div class="label">Đã gửi</div></div>
-      <div class="stat-item"><div class="num" id="skippedStat">0</div><div class="label">Bỏ qua</div></div>
-      <div class="stat-item"><div class="num" id="targetStat">50</div><div class="label">Mục tiêu</div></div>
-    </div>
-
-    <div class="config-section">
-      <div class="section-title">CẤU HÌNH HIỆN TẠI</div>
-      <div class="config-row">
-        <span>Giới tính: <strong id="configGender">Nữ</strong></span>
-        <span>Bạn chung: <strong id="configMutual">0+</strong></span>
-        <span>Khoảng chờ: <strong id="configDelay">6-10s</strong></span>
-      </div>
-    </div>
-
-    <div class="activity-section">
-      <div class="section-title">HOẠT ĐỘNG GẦN ĐÂY</div>
-      <ul class="activity-list" id="activityList"><li style="color:#757575;">Chưa có hoạt động</li></ul>
-    </div>
-
-    <div class="action-buttons">
-      <button id="configBtn">Đổi câu hình</button>
-      <button id="stopBtn" class="btn-stop">Đừng tự động</button>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-bottom">
+      <span>Còn lại <span class="remain" id="remainCount">50</span></span>
+      <span>Đã gửi <span id="sentDisplay">0</span></span>
     </div>
   </div>
 
-  <!-- PANEL ĐÃ DỪNG -->
-  <div id="stoppedPanel">
-    <div class="stop-title">Đã dừng tự động</div>
-    <div class="stop-sub">Phiên đã dừng hoàn toàn.</div>
-
-    <div class="stop-stats">
-      <div class="stop-stat-item"><div class="num" id="stoppedSent">0</div><div class="label">Đã gửi</div></div>
-      <div class="stop-stat-item"><div class="num" id="stoppedSkipped">0</div><div class="label">Bỏ qua</div></div>
-      <div class="stop-stat-item"><div class="num" id="stoppedTarget">50</div><div class="label">Mục tiêu</div></div>
-      <div class="stop-stat-item"><div class="num" id="stoppedRemain">50</div><div class="label">Còn lại</div></div>
-    </div>
-
-    <div class="stop-config" id="stopConfigDisplay">
-      Giới tính Nữ, bạn chung 0+, chờ 6-10s
-    </div>
-
-    <button class="btn-done" id="doneBtn">Xong</button>
+  <div class="stats-grid">
+    <div class="stat-item"><div class="num" id="sentStat">0</div><div class="label">Đã gửi</div></div>
+    <div class="stat-item"><div class="num" id="skippedStat">0</div><div class="label">Bỏ qua</div></div>
+    <div class="stat-item"><div class="num" id="targetStat">50</div><div class="label">Mục tiêu</div></div>
   </div>
 
+  <div class="config-row" id="configDisplay">
+    Giới tính: <strong id="configGender">Nữ</strong> &bull; Bạn chung: <strong id="configMutual">0+</strong> &bull; Chờ: <strong id="configDelay">6-10s</strong>
+  </div>
+
+  <div class="activity" id="activityLog">
+    <div style="color:#757575;">Chưa có hoạt động</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-config" id="configBtn">Đổi câu hình</button>
+    <button class="btn-stop" id="stopBtn">Đừng tự động</button>
+  </div>
 </div>
-<script src="dashboard.js"></script>
+
+<!-- Panel dừng -->
+<div id="stopPanel" class="hidden stop-panel">
+  <div class="stop-title">Đã dừng tự động</div>
+  <div class="stop-sub">Phiên đã dừng hoàn toàn.</div>
+  <div class="stop-stats">
+    <div class="stop-stat"><div class="num" id="stopSent">0</div><div class="label">Đã gửi</div></div>
+    <div class="stop-stat"><div class="num" id="stopSkipped">0</div><div class="label">Bỏ qua</div></div>
+    <div class="stop-stat"><div class="num" id="stopTarget">50</div><div class="label">Mục tiêu</div></div>
+    <div class="stop-stat"><div class="num" id="stopRemain">50</div><div class="label">Còn lại</div></div>
+  </div>
+  <div class="config-row" id="stopConfigDisplay">Giới tính Nữ, bạn chung 0+, chờ 6-10s</div>
+  <button id="doneBtn" style="background:#4fc3f7;border:none;color:#0b0e14;padding:8px;border-radius:6px;font-weight:700;width:100%;cursor:pointer;">Xong</button>
+</div>
+
+<script src="popup.js"></script>
 </body>
 </html>
