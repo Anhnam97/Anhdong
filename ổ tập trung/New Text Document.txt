@@ -1,188 +1,166 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body {
-      width: 360px;
-      padding: 12px;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #0b0e14;
-      color: #eee;
-      margin: 0;
-    }
-    .header { display: flex; justify-content: space-between; align-items: center; }
-    .header h3 { margin: 0; color: #4fc3f7; }
-    .live-badge {
-      background: #00c853;
-      color: #fff;
-      font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .live-badge::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      background: #fff;
-      border-radius: 50%;
-      animation: pulse 1.2s infinite;
-    }
-    @keyframes pulse {
-      0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; }
-    }
-    .sub-title { font-size: 12px; color: #aaa; margin: 4px 0 10px; }
-    .progress-block {
-      background: #151c26;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 10px;
-    }
-    .progress-top { display: flex; justify-content: space-between; font-size: 13px; }
-    .progress-bar-bg {
-      background: #2a3440;
-      height: 6px;
-      border-radius: 4px;
-      margin: 8px 0;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #4fc3f7, #00bcd4);
-      border-radius: 4px;
-      transition: width 0.3s;
-    }
-    .progress-bottom { display: flex; justify-content: space-between; font-size: 11px; color: #b0bec5; }
-    .progress-bottom .remain { color: #fff; font-weight: 600; }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-    .stat-item {
-      background: #151c26;
-      border-radius: 8px;
-      padding: 8px;
-      text-align: center;
-    }
-    .stat-item .num { font-size: 18px; font-weight: 700; }
-    .stat-item .label { font-size: 10px; color: #90a4ae; }
-    .config-row {
-      background: #151c26;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 12px;
-      color: #cfd8dc;
-      margin-bottom: 10px;
-    }
-    .config-row strong { color: #fff; }
-    .activity {
-      background: #151c26;
-      border-radius: 8px;
-      padding: 8px 12px;
-      max-height: 80px;
-      overflow-y: auto;
-      font-size: 12px;
-      color: #cfd8dc;
-      margin-bottom: 10px;
-    }
-    .activity div { padding: 2px 0; border-bottom: 1px solid #1e2733; }
-    .activity div:last-child { border-bottom: none; }
-    .actions {
-      display: flex;
-      gap: 8px;
-    }
-    .actions button {
-      flex: 1;
-      background: #1e2733;
-      border: none;
-      color: #fff;
-      padding: 8px 0;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    .actions .btn-stop { background: #d32f2f; }
-    .actions .btn-config { background: #2a3440; }
-    .hidden { display: none; }
-    .stop-panel {
-      background: #151c26;
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-    }
-    .stop-panel .stop-title { font-size: 18px; font-weight: 700; color: #ff5252; }
-    .stop-panel .stop-sub { color: #b0bec5; font-size: 13px; margin: 4px 0 12px; }
-    .stop-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-    .stop-stat { background: #1e2733; border-radius: 6px; padding: 6px; }
-    .stop-stat .num { font-size: 18px; font-weight: 700; }
-    .stop-stat .label { font-size: 10px; color: #90a4ae; }
-  </style>
-</head>
-<body>
-<div id="mainPanel">
-  <div class="header">
-    <h3>TOPID ASSISTANT</h3>
-    <span class="live-badge" id="liveBadge">Live</span>
-  </div>
-  <div class="sub-title">Đang tự động kết bạn</div>
+// ===== Lấy DOM =====
+const mainPanel = document.getElementById('mainPanel');
+const stopPanel = document.getElementById('stopPanel');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const percentText = document.getElementById('percentText');
+const remainCount = document.getElementById('remainCount');
+const sentDisplay = document.getElementById('sentDisplay');
+const sentStat = document.getElementById('sentStat');
+const skippedStat = document.getElementById('skippedStat');
+const targetStat = document.getElementById('targetStat');
+const configGender = document.getElementById('configGender');
+const configMutual = document.getElementById('configMutual');
+const configDelay = document.getElementById('configDelay');
+const activityLog = document.getElementById('activityLog');
+const liveBadge = document.getElementById('liveBadge');
 
-  <div class="progress-block">
-    <div class="progress-top">
-      <span id="progressText">0%</span>
-      <span id="percentText">0%</span>
-    </div>
-    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
-    <div class="progress-bottom">
-      <span>Còn lại <span class="remain" id="remainCount">50</span></span>
-      <span>Đã gửi <span id="sentDisplay">0</span></span>
-    </div>
-  </div>
+const stopSent = document.getElementById('stopSent');
+const stopSkipped = document.getElementById('stopSkipped');
+const stopTarget = document.getElementById('stopTarget');
+const stopRemain = document.getElementById('stopRemain');
+const stopConfigDisplay = document.getElementById('stopConfigDisplay');
 
-  <div class="stats-grid">
-    <div class="stat-item"><div class="num" id="sentStat">0</div><div class="label">Đã gửi</div></div>
-    <div class="stat-item"><div class="num" id="skippedStat">0</div><div class="label">Bỏ qua</div></div>
-    <div class="stat-item"><div class="num" id="targetStat">50</div><div class="label">Mục tiêu</div></div>
-  </div>
+// ===== Hàm cập nhật UI =====
+function updateUI() {
+  chrome.storage.local.get(['config', 'sentCount', 'skippedCount', 'maxInvites', 'activityLog', 'isStopped'], (data) => {
+    const config = data.config || { gender: 'female', mutualFriends: 0, delayMin: 6, delayMax: 10 };
+    const sent = data.sentCount || 0;
+    const skipped = data.skippedCount || 0;
+    const max = data.maxInvites || 50;
+    const log = data.activityLog || [];
+    const stopped = data.isStopped || false;
 
-  <div class="config-row" id="configDisplay">
-    Giới tính: <strong id="configGender">Nữ</strong> &bull; Bạn chung: <strong id="configMutual">0+</strong> &bull; Chờ: <strong id="configDelay">6-10s</strong>
-  </div>
+    // Cập nhật live panel
+    const percent = Math.min(100, Math.round((sent / max) * 100));
+    progressFill.style.width = percent + '%';
+    progressText.textContent = percent + '%';
+    percentText.textContent = percent + '%';
+    remainCount.textContent = Math.max(0, max - sent);
+    sentDisplay.textContent = sent;
+    sentStat.textContent = sent;
+    skippedStat.textContent = skipped;
+    targetStat.textContent = max;
 
-  <div class="activity" id="activityLog">
-    <div style="color:#757575;">Chưa có hoạt động</div>
-  </div>
+    const genderLabel = config.gender === 'female' ? 'Nữ' : 'Nam';
+    configGender.textContent = genderLabel;
+    configMutual.textContent = (config.mutualFriends || 0) + '+';
+    configDelay.textContent = (config.delayMin || 6) + '-' + (config.delayMax || 10) + 's';
 
-  <div class="actions">
-    <button class="btn-config" id="configBtn">Đổi câu hình</button>
-    <button class="btn-stop" id="stopBtn">Đừng tự động</button>
-  </div>
-</div>
+    // Activity log
+    activityLog.innerHTML = '';
+    const recent = log.slice(-5).reverse();
+    if (recent.length === 0) {
+      activityLog.innerHTML = '<div style="color:#757575;">Chưa có hoạt động</div>';
+    } else {
+      recent.forEach(msg => {
+        const div = document.createElement('div');
+        div.textContent = msg;
+        activityLog.appendChild(div);
+      });
+    }
 
-<!-- Panel dừng -->
-<div id="stopPanel" class="hidden stop-panel">
-  <div class="stop-title">Đã dừng tự động</div>
-  <div class="stop-sub">Phiên đã dừng hoàn toàn.</div>
-  <div class="stop-stats">
-    <div class="stop-stat"><div class="num" id="stopSent">0</div><div class="label">Đã gửi</div></div>
-    <div class="stop-stat"><div class="num" id="stopSkipped">0</div><div class="label">Bỏ qua</div></div>
-    <div class="stop-stat"><div class="num" id="stopTarget">50</div><div class="label">Mục tiêu</div></div>
-    <div class="stop-stat"><div class="num" id="stopRemain">50</div><div class="label">Còn lại</div></div>
-  </div>
-  <div class="config-row" id="stopConfigDisplay">Giới tính Nữ, bạn chung 0+, chờ 6-10s</div>
-  <button id="doneBtn" style="background:#4fc3f7;border:none;color:#0b0e14;padding:8px;border-radius:6px;font-weight:700;width:100%;cursor:pointer;">Xong</button>
-</div>
+    // Stop panel
+    stopSent.textContent = sent;
+    stopSkipped.textContent = skipped;
+    stopTarget.textContent = max;
+    stopRemain.textContent = Math.max(0, max - sent);
+    stopConfigDisplay.textContent = `Giới tính ${genderLabel}, bạn chung ${config.mutualFriends || 0}+, chờ ${config.delayMin || 6}-${config.delayMax || 10}s`;
 
-<script src="popup.js"></script>
-</body>
-</html>
+    // Chuyển panel nếu dừng
+    if (stopped) {
+      mainPanel.classList.add('hidden');
+      stopPanel.classList.remove('hidden');
+      liveBadge.textContent = 'Đã dừng';
+      liveBadge.style.background = '#ff5252';
+      liveBadge.style.animation = 'none';
+    } else {
+      mainPanel.classList.remove('hidden');
+      stopPanel.classList.add('hidden');
+      liveBadge.textContent = 'Live';
+      liveBadge.style.background = '#00c853';
+      liveBadge.style.animation = 'pulse 1.2s infinite';
+    }
+  });
+}
+
+// ===== Lắng nghe tin nhắn từ content script =====
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'progress') {
+    if (msg.name) {
+      chrome.storage.local.get(['activityLog'], (data) => {
+        let log = data.activityLog || [];
+        log.push('Đã gửi lời mời cho ' + msg.name);
+        chrome.storage.local.set({ activityLog: log }, updateUI);
+      });
+    } else {
+      updateUI();
+    }
+  }
+  if (msg.type === 'skipped') {
+    chrome.storage.local.get(['skippedCount'], (data) => {
+      let skipped = (data.skippedCount || 0) + 1;
+      chrome.storage.local.set({ skippedCount: skipped }, updateUI);
+    });
+  }
+  if (msg.action === 'stopped') {
+    chrome.storage.local.set({ isStopped: true }, updateUI);
+  }
+});
+
+// ===== Nút bắt đầu (đã có trong popup, nhưng giờ xử lý tại đây) =====
+// Tạo nút "Bắt đầu" mới nếu chưa có
+const startBtn = document.createElement('button');
+startBtn.textContent = 'Bắt đầu';
+startBtn.style.cssText = 'background:#4fc3f7;border:none;color:#0b0e14;padding:8px;border-radius:6px;font-weight:bold;width:100%;margin-top:8px;cursor:pointer;';
+startBtn.addEventListener('click', () => {
+  // Lấy config từ storage hoặc tạo mới
+  chrome.storage.local.get(['config'], (data) => {
+    let config = data.config || { gender: 'female', mutualFriends: 0, maxInvites: 50, delayMin: 6, delayMax: 10 };
+    chrome.storage.local.set({ 
+      config, 
+      sentCount: 0, 
+      skippedCount: 0, 
+      activityLog: [], 
+      isStopped: false,
+      maxInvites: config.maxInvites 
+    });
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'start', config });
+      }
+    });
+    updateUI();
+  });
+});
+// Chèn vào đầu mainPanel
+mainPanel.insertBefore(startBtn, mainPanel.firstChild);
+
+// ===== Nút dừng =====
+document.getElementById('stopBtn').addEventListener('click', () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]) {
+      chrome.tabs.sendMessage(tabs[0].id, { action: 'stop' });
+    }
+  });
+  chrome.storage.local.set({ isStopped: true }, updateUI);
+});
+
+// ===== Nút "Đổi câu hình" =====
+document.getElementById('configBtn').addEventListener('click', () => {
+  // Mở lại popup với cài đặt, nhưng không cần
+  // Có thể mở trang cài đặt riêng hoặc reload popup
+  chrome.runtime.reload();
+});
+
+// ===== Nút "Xong" =====
+document.getElementById('doneBtn').addEventListener('click', () => {
+  window.close();
+});
+
+// ===== Khởi tạo và cập nhật định kỳ =====
+updateUI();
+setInterval(updateUI, 2000);
+
+// Thông báo đã sẵn sàng
+console.log('Popup TOPID Assistant loaded');
