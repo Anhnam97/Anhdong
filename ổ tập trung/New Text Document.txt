@@ -1,1 +1,176 @@
+// === UNFOLLOW API - FIX VARIABLES ===
+const DOC_ID = '26828219736856793';
+const YOUR_TOKEN = 'NAfzcECySWmOKAbP9EbYiW5IL4OJw36aKXTFbOlk3SYl71uEk3roozg:17:1783597204';
+const MAX = 30;
+let count = 0;
 
+function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
+// === GỌI API UNFOLLOW - THỬ NHIỀU FORMAT ===
+async function unfollowAPI(userId) {
+    if (count >= MAX) return false;
+    
+    // Danh sách các format variables khác nhau
+    var variableFormats = [
+        // Format 1: Đơn giản nhất
+        {
+            user_id: userId,
+            unfollow: true
+        },
+        // Format 2: Có input
+        {
+            input: {
+                unfollow: true,
+                user_id: userId
+            }
+        },
+        // Format 3: Đầy đủ
+        {
+            input: {
+                unfollow: true,
+                user_id: userId,
+                source: 'profile_follow',
+                location: 'profile'
+            }
+        },
+        // Format 4: Dạng array
+        {
+            user_ids: [userId],
+            unfollow: true
+        },
+        // Format 5: Dạng cũ
+        {
+            unfollow_user_id: userId,
+            source: 'profile'
+        },
+        // Format 6: Có thêm context
+        {
+            input: {
+                unfollow: true,
+                user_id: userId,
+                source: 'profile',
+                context: {
+                    location: 'profile'
+                }
+            }
+        }
+    ];
+    
+    var dtsg = YOUR_TOKEN;
+    
+    for (var f = 0; f < variableFormats.length; f++) {
+        try {
+            var variables = variableFormats[f];
+            console.log('🔄 Thử format ' + (f+1) + ':', JSON.stringify(variables));
+            
+            var body = new URLSearchParams();
+            body.append('fb_dtsg', dtsg);
+            body.append('doc_id', DOC_ID);
+            body.append('variables', JSON.stringify(variables));
+            
+            var res = await fetch('https://www.facebook.com/api/graphql/', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: body.toString()
+            });
+            
+            var data = await res.json();
+            console.log('📡 Response format ' + (f+1) + ':', JSON.stringify(data).substring(0, 300));
+            
+            // Kiểm tra thành công
+            if (data.data && (data.data.unfollow || data.data.success)) {
+                count++;
+                console.log('✅ #' + count + ' - Đã hủy ID: ' + userId);
+                await sleep(2000);
+                return true;
+            }
+            
+            // Nếu lỗi nhưng không phải lỗi variable, dừng
+            if (data.errors && data.errors[0]?.message.indexOf('variable') === -1) {
+                console.log('⚠️ Lỗi khác:', data.errors[0]?.message);
+                return false;
+            }
+            
+        } catch (e) {
+            console.log('❌ Lỗi format ' + (f+1) + ':', e.message);
+        }
+        
+        await sleep(300);
+    }
+    
+    return false;
+}
+
+// === LẤY DANH SÁCH ID ĐANG THEO DÕI ===
+async function getFollowingIds() {
+    console.log('🔄 Đang cuộn load danh sách...');
+    
+    for (var i = 0; i < 15; i++) {
+        window.scrollBy(0, 2000);
+        await sleep(800);
+    }
+    
+    var ids = new Set();
+    var links = document.querySelectorAll('a[href*="/user/"], a[href*="profile.php"]');
+    
+    for (var i = 0; i < links.length; i++) {
+        var match = links[i].href.match(/[?&]id=(\d+)/) || links[i].href.match(/\/(\d{7,15})(?:\/|$)/);
+        if (match && match[1] && match[1].length >= 7) {
+            ids.add(match[1]);
+        }
+    }
+    
+    var result = [];
+    var idx = 0;
+    for (var id of ids) {
+        if (idx >= MAX) break;
+        result.push(id);
+        idx++;
+    }
+    
+    console.log('📋 Tìm thấy ' + ids.size + ' ID, sẽ xử lý ' + result.length + ' ID');
+    return result;
+}
+
+// === TEST 1 ID ===
+async function testUnfollow(userId) {
+    console.log('🧪 Test với ID:', userId);
+    console.log('🔑 Token:', YOUR_TOKEN.substring(0, 30) + '...');
+    console.log('📄 Doc_ID:', DOC_ID);
+    await unfollowAPI(userId);
+}
+
+// === START ===
+async function start() {
+    console.log('%c🚀 UNFOLLOW API - THỬ NHIỀU FORMAT', 'font-size:20px;color:#e60023;font-weight:bold');
+    console.log('🔑 Token:', YOUR_TOKEN.substring(0, 30) + '...');
+    console.log('📄 Doc_ID:', DOC_ID);
+    
+    var ids = await getFollowingIds();
+    
+    if (ids.length === 0) {
+        console.log('❌ Không tìm thấy ID nào! Vào tab "Đang theo dõi"');
+        return;
+    }
+    
+    console.log('\n⏳ Bắt đầu hủy ' + ids.length + ' tài khoản...\n');
+    
+    for (var i = 0; i < ids.length; i++) {
+        console.log('--- [' + (i+1) + '/' + ids.length + '] ID: ' + ids[i] + ' ---');
+        await unfollowAPI(ids[i]);
+        if (count >= MAX) break;
+        await sleep(1500);
+    }
+    
+    console.log('\n%c🎉 HOÀN TẤT! Đã hủy ' + count + '/' + ids.length + ' tài khoản.', 'font-size:18px;color:green');
+}
+
+// === CHẠY ===
+start();
