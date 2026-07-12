@@ -1,1 +1,267 @@
+// === UNFOLLOW API 2026 - FULL SCRIPT ===
+let count = 0;
+const MAX = 30;
 
+function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
+// === LẤY TOKEN ===
+function getFbDtsg() {
+    var input = document.querySelector('input[name="fb_dtsg"]');
+    if (input && input.value) return input.value;
+    
+    for (var key in sessionStorage) {
+        if (key.indexOf('dtsg') !== -1) {
+            try {
+                var val = sessionStorage.getItem(key);
+                if (val && val.length > 10) return val;
+            } catch(e) {}
+        }
+    }
+    
+    for (var key in localStorage) {
+        if (key.indexOf('dtsg') !== -1) {
+            try {
+                var val = localStorage.getItem(key);
+                if (val && val.length > 10) return val;
+            } catch(e) {}
+        }
+    }
+    
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+        var c = cookies[i].trim();
+        if (c.indexOf('dtsg=') === 0) {
+            return c.split('=')[1];
+        }
+    }
+    
+    if (window.fb_dtsg) return window.fb_dtsg;
+    if (window.__fb_dtsg) return window.__fb_dtsg;
+    
+    return null;
+}
+
+// === LẤY USER ID HIỆN TẠI ===
+function getCurrentUserId() {
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+        var c = cookies[i].trim();
+        if (c.indexOf('c_user=') === 0) {
+            return c.split('=')[1];
+        }
+    }
+    
+    var links = document.querySelectorAll('a[href*="/profile.php"]');
+    for (var i = 0; i < links.length; i++) {
+        var match = links[i].href.match(/[?&]id=(\d+)/);
+        if (match) return match[1];
+    }
+    
+    // Lấy từ avatar
+    var avatars = document.querySelectorAll('img[src*="avatar"]');
+    for (var i = 0; i < avatars.length; i++) {
+        var parent = avatars[i].closest('a');
+        if (parent) {
+            var match = parent.href.match(/[?&]id=(\d+)/) || parent.href.match(/\/(\d{7,15})(?:\/|$)/);
+            if (match) return match[1];
+        }
+    }
+    
+    return null;
+}
+
+// === GỌI API UNFOLLOW ===
+async function unfollowAPI(userId) {
+    if (count >= MAX) return false;
+    
+    var dtsg = getFbDtsg();
+    if (!dtsg) {
+        console.log('❌ Không có token');
+        return false;
+    }
+    
+    try {
+        var params = new URLSearchParams();
+        params.append('fb_dtsg', dtsg);
+        params.append('uid', userId);
+        params.append('unfollow', '1');
+        
+        var res = await fetch('https://www.facebook.com/ajax/follow/unfollow.php', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: params.toString()
+        });
+        
+        var text = await res.text();
+        console.log('📡 Response:', text.substring(0, 300));
+        
+        if (text.indexOf('"success":true') !== -1 || 
+            text.indexOf('"success": true') !== -1 ||
+            text.indexOf('for (;;);') !== -1) {
+            count++;
+            console.log('✅ #' + count + ' - Đã hủy ID: ' + userId);
+            await sleep(2000);
+            return true;
+        } else {
+            console.log('⚠️ Lỗi: ' + text);
+            return false;
+        }
+        
+    } catch (e) {
+        console.log('❌ Lỗi: ' + e.message);
+        return false;
+    }
+}
+
+// === GỌI API GRAPHQL ===
+async function unfollowGraphQL(userId) {
+    if (count >= MAX) return false;
+    
+    var dtsg = getFbDtsg();
+    if (!dtsg) return false;
+    
+    try {
+        var docId = null;
+        var scripts = document.querySelectorAll('script');
+        for (var i = 0; i < scripts.length; i++) {
+            var match = scripts[i].textContent.match(/doc_id["']\s*:\s*(\d+)/);
+            if (match) {
+                docId = match[1];
+                break;
+            }
+        }
+        
+        if (!docId) {
+            docId = '2633734854483155';
+        }
+        
+        var params = new URLSearchParams();
+        params.append('fb_dtsg', dtsg);
+        params.append('variables', JSON.stringify({
+            input: {
+                source: 'profile',
+                unfollow: true,
+                user_id: userId
+            }
+        }));
+        params.append('doc_id', docId);
+        
+        var res = await fetch('https://www.facebook.com/api/graphql/', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        });
+        
+        var data = await res.json();
+        console.log('📡 GraphQL:', data);
+        
+        if (data.data && data.data.unfollow) {
+            count++;
+            console.log('✅ #' + count + ' - Đã hủy (GraphQL): ' + userId);
+            await sleep(2000);
+            return true;
+        }
+        
+    } catch (e) {
+        console.log('❌ GraphQL lỗi: ' + e.message);
+    }
+    return false;
+}
+
+// === LẤY DANH SÁCH ID ===
+async function getFollowingIds() {
+    console.log('🔄 Đang cuộn load...');
+    
+    for (var i = 0; i < 15; i++) {
+        window.scrollBy(0, 2000);
+        await sleep(800);
+    }
+    
+    var ids = new Set();
+    var links = document.querySelectorAll('a[href*="/user/"], a[href*="profile.php"]');
+    
+    for (var i = 0; i < links.length; i++) {
+        var match = links[i].href.match(/[?&]id=(\d+)/) || links[i].href.match(/\/(\d{7,15})(?:\/|$)/);
+        if (match && match[1] && match[1].length >= 7) {
+            ids.add(match[1]);
+        }
+    }
+    
+    var result = [];
+    var idx = 0;
+    for (var id of ids) {
+        if (idx >= MAX) break;
+        result.push(id);
+        idx++;
+    }
+    
+    console.log('📋 Tìm thấy ' + ids.size + ' ID');
+    return result;
+}
+
+// === KIỂM TRA TOKEN THỦ CÔNG ===
+function checkToken() {
+    var token = getFbDtsg();
+    console.log('🔑 Token:', token ? 'CÓ (độ dài: ' + token.length + ')' : 'KHÔNG');
+    if (token) console.log('📌 Token preview:', token.substring(0, 30) + '...');
+    
+    var userId = getCurrentUserId();
+    console.log('👤 User ID:', userId || 'KHÔNG');
+    
+    return { token: token, userId: userId };
+}
+
+// === START ===
+async function start() {
+    console.log('%c🚀 START UNFOLLOW API 2026', 'font-size:18px;color:#e60023');
+    
+    var token = getFbDtsg();
+    console.log('🔑 Token:', token ? '✅ CÓ (độ dài: ' + token.length + ')' : '❌ KHÔNG');
+    
+    if (!token) {
+        console.log('❌ Không có token!');
+        console.log('💡 Thử F5 refresh rồi chạy lại');
+        return;
+    }
+    
+    var userId = getCurrentUserId();
+    console.log('👤 User ID hiện tại:', userId || '❌ KHÔNG');
+    
+    var ids = await getFollowingIds();
+    
+    if (ids.length === 0) {
+        console.log('❌ Không tìm thấy ID nào!');
+        console.log('💡 Hãy vào tab "Đang theo dõi" của người khác');
+        return;
+    }
+    
+    console.log('⏳ Bắt đầu hủy ' + ids.length + ' tài khoản...');
+    console.log('📋 Danh sách ID:', ids);
+    
+    for (var i = 0; i < ids.length; i++) {
+        console.log('--- [' + (i+1) + '/' + ids.length + '] ---');
+        var success = await unfollowAPI(ids[i]);
+        
+        if (!success) {
+            console.log('🔄 Thử GraphQL...');
+            success = await unfollowGraphQL(ids[i]);
+        }
+        
+        if (count >= MAX) break;
+        await sleep(1000);
+    }
+    
+    console.log('%c🎉 HOÀN TẤT! Đã hủy ' + count + '/' + ids.length, 'font-size:18px;color:green');
+}
+
+// === CHẠY ===
+start();
