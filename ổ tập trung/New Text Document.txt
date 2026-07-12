@@ -1,4 +1,4 @@
-// === SCRIPT HỦY THEO DÕI - BẢN DÙNG CONSOLE TRỰC TIẾP (CÓ GIÁM SÁT) ===
+// === UNFOLLOW BẰNG API - BẢN CHUẨN 2026 ===
 let count = 0;
 const MAX = 30;
 
@@ -6,152 +6,226 @@ function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
-// === LẤY TOÀN BỘ NÚT TRONG TRANG ===
-function getAllButtons() {
-    var all = [];
-    // Lấy tất cả element có role="button"
-    var btns = document.querySelectorAll('[role="button"]');
-    for (var i = 0; i < btns.length; i++) {
-        all.push(btns[i]);
-    }
-    // Lấy thêm các button thông thường
-    var btns2 = document.querySelectorAll('button');
-    for (var j = 0; j < btns2.length; j++) {
-        all.push(btns2[j]);
-    }
-    return all;
-}
-
-// === TÌM NÚT THEO DÕI BẰNG CÁCH QUÉT TOÀN BỘ ===
-function findFollowButtons() {
-    var btns = getAllButtons();
-    var results = [];
-    for (var i = 0; i < btns.length; i++) {
-        var text = btns[i].textContent || '';
-        var aria = btns[i].getAttribute('aria-label') || '';
-        // Tìm nút có chứa "Đang theo dõi" hoặc "Following"
-        if (text.indexOf('Đang theo dõi') !== -1 || 
-            text.indexOf('Following') !== -1 ||
-            aria.indexOf('Đang theo dõi') !== -1 ||
-            aria.indexOf('Following') !== -1) {
-            results.push(btns[i]);
+// === LẤY TOKEN VÀ THÔNG TIN CẦN THIẾT ===
+function getTokens() {
+    // 1. fb_dtsg
+    var dtsg = document.querySelector('input[name="fb_dtsg"]')?.value;
+    if (!dtsg) {
+        // Tìm trong script
+        var scripts = document.querySelectorAll('script');
+        for (var i = 0; i < scripts.length; i++) {
+            var match = scripts[i].textContent.match(/fb_dtsg["']\s*:\s*"([^"]+)"/);
+            if (match) {
+                dtsg = match[1];
+                break;
+            }
         }
     }
-    return results;
+    
+    // 2. Lấy FB_TOKEN từ cookie
+    var cookies = document.cookie.split(';');
+    var fbToken = '';
+    for (var i = 0; i < cookies.length; i++) {
+        var c = cookies[i].trim();
+        if (c.indexOf('sb=') === 0) {
+            fbToken = c.split('=')[1];
+            break;
+        }
+    }
+    
+    // 3. Lấy user_id hiện tại
+    var userId = '';
+    var links = document.querySelectorAll('a[href*="/profile.php"]');
+    for (var i = 0; i < links.length; i++) {
+        var match = links[i].href.match(/[?&]id=(\d+)/);
+        if (match) {
+            userId = match[1];
+            break;
+        }
+    }
+    
+    return { dtsg: dtsg, fbToken: fbToken, userId: userId };
 }
 
-// === HỦY THEO DÕI BẰNG CLICK TRỰC TIẾP (QUÉT TOÀN BỘ) ===
-async function unfollowByScan() {
-    if (count >= MAX) {
-        console.log('✅ Đã đạt giới hạn ' + MAX);
+// === GỌI API UNFOLLOW ===
+async function unfollowAPI(userId) {
+    if (count >= MAX) return false;
+    
+    var tokens = getTokens();
+    if (!tokens.dtsg) {
+        console.log('❌ Không tìm thấy fb_dtsg');
         return false;
     }
     
-    // Tìm tất cả nút "Đang theo dõi"
-    var followBtns = findFollowButtons();
-    console.log('🔘 Tìm thấy ' + followBtns.length + ' nút "Đang theo dõi"');
-    
-    if (followBtns.length === 0) {
-        console.log('❌ Không tìm thấy nút "Đang theo dõi" nào!');
-        console.log('💡 Hãy đảm bảo bạn đang ở tab "Đang theo dõi" và đã load hết danh sách');
-        return false;
-    }
-    
-    // Lấy nút đầu tiên
-    var btn = followBtns[0];
-    
-    // Scroll đến nút
-    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    await sleep(1000);
-    
-    console.log('🔄 Click nút "Đang theo dõi"');
-    btn.click();
-    await sleep(1500);
-    
-    // Tìm nút "Bỏ theo dõi" trong menu
-    var menuItems = document.querySelectorAll('[role="menuitem"], [role="button"]');
-    for (var i = 0; i < menuItems.length; i++) {
-        var text = menuItems[i].textContent || '';
-        if (text.indexOf('Bỏ theo dõi') !== -1 || 
-            text.indexOf('Unfollow') !== -1) {
-            console.log('✅ Click "Bỏ theo dõi"');
-            menuItems[i].click();
-            await sleep(500);
-            
-            // Xác nhận nếu có popup
-            var confirms = document.querySelectorAll('[role="button"]');
-            for (var j = 0; j < confirms.length; j++) {
-                var cText = confirms[j].textContent || '';
-                if (cText.indexOf('Xác nhận') !== -1 || 
-                    cText.indexOf('Confirm') !== -1 ||
-                    cText.indexOf('Bỏ theo dõi') !== -1) {
-                    confirms[j].click();
-                    break;
-                }
+    try {
+        // Cách 1: Dùng fetch với form data
+        var formData = new FormData();
+        formData.append('fb_dtsg', tokens.dtsg);
+        formData.append('uid', userId);
+        formData.append('unfollow', '1');
+        formData.append('__a', '1');
+        
+        var url = 'https://www.facebook.com/ajax/follow/unfollow.php';
+        
+        var res = await fetch(url, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
             }
-            
+        });
+        
+        var text = await res.text();
+        console.log('📡 Response: ' + text.substring(0, 200));
+        
+        // Kiểm tra kết quả
+        if (text.indexOf('success') !== -1 || text.indexOf('true') !== -1) {
             count++;
-            console.log('✅ #' + count + ' - Đã hủy 1 tài khoản');
-            await sleep(2000);
-            
-            // Xóa nút đã xử lý khỏi DOM để không bị trùng
-            if (btn.parentNode) {
-                btn.style.display = 'none';
-            }
-            
+            console.log('✅ #' + count + ' - Đã hủy ID: ' + userId);
+            await sleep(1500);
+            return true;
+        } else {
+            console.log('⚠️ API trả về lỗi: ' + text);
+            return false;
+        }
+        
+    } catch (e) {
+        console.log('❌ Lỗi: ' + e.message);
+        return false;
+    }
+}
+
+// === GỌI API V2 (Dùng graphql) ===
+async function unfollowGraphQL(userId) {
+    if (count >= MAX) return false;
+    
+    var tokens = getTokens();
+    if (!tokens.dtsg) return false;
+    
+    try {
+        // Endpoint GraphQL của Facebook
+        var url = 'https://www.facebook.com/api/graphql/';
+        
+        var payload = {
+            doc_id: '1234567890', // Cần tìm doc_id mới
+            variables: {
+                input: {
+                    source: 'profile_follow',
+                    unfollow: true,
+                    user_id: userId,
+                    location: 'profile'
+                }
+            },
+            fb_dtsg: tokens.dtsg
+        };
+        
+        var res = await fetch(url, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'fb_dtsg=' + encodeURIComponent(tokens.dtsg) + 
+                  '&variables=' + encodeURIComponent(JSON.stringify(payload.variables)) +
+                  '&doc_id=' + payload.doc_id
+        });
+        
+        var data = await res.json();
+        console.log('📡 GraphQL Response:', data);
+        
+        if (data.data && data.data.unfollow) {
+            count++;
+            console.log('✅ #' + count + ' - Đã hủy ID: ' + userId);
+            await sleep(1500);
             return true;
         }
+        
+    } catch (e) {
+        console.log('❌ GraphQL lỗi: ' + e.message);
     }
-    
     return false;
 }
 
-// === CHẠY TỰ ĐỘNG ===
-async function startUnfollow() {
-    console.log('%c🚀 BẮT ĐẦU HỦY THEO DÕI - QUÉT TOÀN BỘ TRANG', 'font-size:18px;color:#e60023');
-    console.log('📌 Script sẽ tự động tìm và click các nút "Đang theo dõi"');
-    console.log('📌 Tối đa ' + MAX + ' tài khoản/lần');
-    
-    // Cuộn để load thêm
+// === LẤY DANH SÁCH ID ĐANG THEO DÕI ===
+async function getFollowingIds() {
     console.log('🔄 Đang cuộn load danh sách...');
-    for (var i = 0; i < 20; i++) {
+    
+    // Cuộn load
+    for (var i = 0; i < 15; i++) {
         window.scrollBy(0, 2000);
         await sleep(800);
     }
     
-    // Kiểm tra có nút không
-    var initialBtns = findFollowButtons();
-    console.log('🔘 Ban đầu tìm thấy ' + initialBtns.length + ' nút "Đang theo dõi"');
+    var ids = new Set();
     
-    if (initialBtns.length === 0) {
-        console.log('❌ Không tìm thấy nút nào! Thử:');
-        console.log('1. F5 refresh trang');
-        console.log('2. Vào lại tab "Đang theo dõi"');
-        console.log('3. Đảm bảo bạn đang follow người khác');
+    // Quét tất cả link có ID
+    var links = document.querySelectorAll('a[href*="profile.php"], a[href*="/user/"]');
+    console.log('🔗 Tìm thấy ' + links.length + ' link');
+    
+    for (var i = 0; i < links.length; i++) {
+        var href = links[i].href;
+        var match = href.match(/[?&]id=(\d+)/) || href.match(/\/(\d{7,15})(?:\/|$)/);
+        if (match && match[1] && match[1].length >= 7) {
+            ids.add(match[1]);
+        }
+    }
+    
+    var result = [];
+    var idx = 0;
+    for (var id of ids) {
+        if (idx >= MAX) break;
+        result.push(id);
+        idx++;
+    }
+    
+    console.log('📋 Tìm thấy ' + ids.size + ' ID');
+    return result;
+}
+
+// === START ===
+async function start() {
+    console.log('%c🚀 BẮT ĐẦU UNFOLLOW BẰNG API', 'font-size:18px;color:#e60023');
+    
+    // Kiểm tra token
+    var tokens = getTokens();
+    console.log('🔑 fb_dtsg:', tokens.dtsg ? '✅ CÓ' : '❌ KHÔNG');
+    console.log('🍪 Cookie sb:', tokens.fbToken ? '✅ CÓ' : '❌ KHÔNG');
+    
+    if (!tokens.dtsg) {
+        console.log('❌ Không có fb_dtsg! Thử F5 refresh.');
         return;
     }
     
-    // Xử lý từng nút
-    while (count < MAX) {
-        var success = await unfollowByScan();
+    var ids = await getFollowingIds();
+    
+    if (ids.length === 0) {
+        console.log('❌ Không tìm thấy ID nào!');
+        console.log('💡 Hãy vào tab "Đang theo dõi" trước khi chạy');
+        return;
+    }
+    
+    console.log('⏳ Bắt đầu hủy ' + ids.length + ' tài khoản...');
+    
+    // Thử API từng ID
+    for (var i = 0; i < ids.length; i++) {
+        console.log('--- [' + (i+1) + '/' + ids.length + '] ID: ' + ids[i] + ' ---');
+        
+        // Thử API chính trước
+        var success = await unfollowAPI(ids[i]);
+        
+        // Nếu API chính thất bại, thử GraphQL
         if (!success) {
-            console.log('⚠️ Không tìm thấy thêm nút nào, dừng...');
-            break;
+            console.log('🔄 Thử GraphQL...');
+            success = await unfollowGraphQL(ids[i]);
         }
         
-        // Cuộn xuống để load thêm
-        if (count % 5 === 0) {
-            window.scrollBy(0, 1000);
-            await sleep(1000);
-        }
+        if (count >= MAX) break;
+        await sleep(1000);
     }
     
-    console.log('%c🎉 HOÀN TẤT! Đã hủy ' + count + ' tài khoản.', 'font-size:18px;color:green');
-    
-    if (count < MAX) {
-        console.log('💡 Chạy lại script để tiếp tục hủy thêm');
-    }
+    console.log('%c🎉 HOÀN TẤT! Đã hủy ' + count + '/' + ids.length + ' tài khoản.', 'font-size:18px;color:green');
 }
 
 // === CHẠY ===
-startUnfollow();
+start();
