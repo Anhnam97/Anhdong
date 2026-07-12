@@ -1,341 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Unfollow Control Panel</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 750px;
-            width: 100%;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        }
-        h1 {
-            color: #1877f2;
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 5px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #65676b;
-            margin-bottom: 25px;
-            font-size: 14px;
-        }
-        .input-group {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .input-group label {
-            font-weight: 600;
-            color: #1c1e21;
-            white-space: nowrap;
-            font-size: 14px;
-        }
-        .input-group input {
-            padding: 8px 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            transition: 0.3s;
-            width: 80px;
-        }
-        .input-group input:focus {
-            border-color: #1877f2;
-        }
-        .input-group .hint {
-            color: #65676b;
-            font-size: 12px;
-        }
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .btn {
-            flex: 1;
-            min-width: 100px;
-            padding: 10px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-            color: white;
-        }
-        .btn-primary { background: #1877f2; }
-        .btn-primary:hover { background: #1664d4; }
-        .btn-primary:disabled { background: #9bb7e6; cursor: not-allowed; }
-        
-        .btn-danger { background: #e41e3f; }
-        .btn-danger:hover { background: #c91a36; }
-        .btn-danger:disabled { background: #e99aa9; cursor: not-allowed; }
-        
-        .btn-success { background: #31a24c; }
-        .btn-success:hover { background: #288f41; }
-        .btn-success:disabled { background: #98d1a8; cursor: not-allowed; }
-        
-        .btn-warning { background: #f7b928; }
-        .btn-warning:hover { background: #e5a70d; }
-        .btn-warning:disabled { background: #f5dc93; cursor: not-allowed; }
-
-        .btn-secondary { background: #65676b; }
-        .btn-secondary:hover { background: #4b4d52; }
-        .btn-secondary:disabled { background: #b0b2b6; cursor: not-allowed; }
-        
-        .status-box {
-            background: #f7f8fa;
-            border-radius: 10px;
-            padding: 15px 20px;
-            margin-bottom: 15px;
-        }
-        .status-box .row {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid #e4e6eb;
-        }
-        .status-box .row:last-child { border-bottom: none; }
-        .status-box .label { color: #65676b; font-size: 14px; }
-        .status-box .value { font-weight: 600; color: #1c1e21; font-size: 14px; }
-        .value.success { color: #31a24c; }
-        .value.danger { color: #e41e3f; }
-        .value.info { color: #1877f2; }
-        .value.warning { color: #f7b928; }
-        
-        .log-box {
-            background: #1c1e21;
-            color: #e4e6eb;
-            border-radius: 10px;
-            padding: 12px 16px;
-            height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.7;
-            margin-top: 10px;
-        }
-        .log-box .log-success { color: #31a24c; }
-        .log-box .log-error { color: #e41e3f; }
-        .log-box .log-info { color: #64b5f6; }
-        .log-box .log-warning { color: #f7b928; }
-        .log-box .log-highlight { color: #ff6b6b; font-weight: bold; }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e4e6eb;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        .progress-bar .fill {
-            height: 100%;
-            background: linear-gradient(90deg, #1877f2, #31a24c);
-            border-radius: 4px;
-            transition: width 0.5s;
-            width: 0%;
-        }
-        .footer {
-            margin-top: 15px;
-            text-align: center;
-            color: #65676b;
-            font-size: 12px;
-        }
-        .settings-row {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            background: #f7f8fa;
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            align-items: center;
-        }
-        .settings-row .group {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .settings-row .group label {
-            font-weight: 600;
-            font-size: 13px;
-            color: #1c1e21;
-        }
-        .settings-row .group input {
-            width: 60px;
-            padding: 5px 8px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 13px;
-            text-align: center;
-        }
-        .settings-row .group input:focus {
-            border-color: #1877f2;
-            outline: none;
-        }
-        .settings-row .group .unit {
-            font-size: 12px;
-            color: #65676b;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h1>📌 Unfollow Control</h1>
-    <p class="subtitle">Hủy theo dõi hàng loạt trên Facebook</p>
-
-    <!-- Cài đặt -->
-    <div class="settings-row">
-        <div class="group">
-            <label>🎯 Số lượng:</label>
-            <input type="number" id="maxCount" value="30" min="1" max="500">
-        </div>
-        <div class="group">
-            <label>⏱ Delay:</label>
-            <input type="number" id="delayTime" value="2" min="0.5" max="10" step="0.5">
-            <span class="unit">giây</span>
-        </div>
-        <div class="group">
-            <label>🔄 Lần thử lại:</label>
-            <input type="number" id="retryCount" value="2" min="0" max="5">
-            <span class="unit">lần</span>
-        </div>
-    </div>
-
-    <!-- Nút điều khiển -->
-    <div class="btn-group">
-        <button class="btn btn-primary" id="btnStart">▶ Bắt đầu</button>
-        <button class="btn btn-danger" id="btnPause" disabled>⏸ Tạm dừng</button>
-        <button class="btn btn-success" id="btnResume" disabled>▶ Tiếp tục</button>
-        <button class="btn btn-warning" id="btnStop" disabled>⏹ Dừng</button>
-    </div>
-
-    <!-- Trạng thái -->
-    <div class="status-box">
-        <div class="row">
-            <span class="label">📊 Trạng thái:</span>
-            <span class="value info" id="status">Chưa bắt đầu</span>
-        </div>
-        <div class="row">
-            <span class="label">🔍 ID đang xử lý:</span>
-            <span class="value" id="currentId">---</span>
-        </div>
-        <div class="row">
-            <span class="label">✅ Đã hủy:</span>
-            <span class="value success" id="unfollowedCount">0</span>
-        </div>
-        <div class="row">
-            <span class="label">⏳ Đã quét:</span>
-            <span class="value" id="scannedCount">0</span>
-        </div>
-        <div class="row">
-            <span class="label">📋 Tổng ID:</span>
-            <span class="value" id="totalIds">0</span>
-        </div>
-        <div class="row">
-            <span class="label">⏱ Thời gian chạy:</span>
-            <span class="value" id="runTime">00:00</span>
-        </div>
-    </div>
-
-    <!-- Progress Bar -->
-    <div class="progress-bar">
-        <div class="fill" id="progressFill"></div>
-    </div>
-
-    <!-- Log -->
-    <div class="log-box" id="logBox">
-        <div class="log-info">📌 Sẵn sàng. Nhấn "Bắt đầu" để chạy.</div>
-    </div>
-
-    <div class="footer">
-        ⚠️ Token có thời hạn ~1-2 giờ. Nếu lỗi, refresh token và chạy lại.
-    </div>
-</div>
-
-<script>
-// === BIẾN TOÀN CỤC ===
+// === UNFOLLOW - QUÉT ĐÚNG TAB "ĐANG THEO DÕI" CỦA BẠN ===
 const DOC_ID = '26828219736856793';
 const YOUR_TOKEN = 'NAfxkJ83unkb5VJ6suTDgkQDiI40jI_hqVxqn-xk77X0WtvLmBhrl_A:17:1783597204';
+const MAX = 30;
+let count = 0;
 
-let isRunning = false;
-let isPaused = false;
-let shouldStop = false;
-let unfollowedCount = 0;
-let scannedCount = 0;
-let totalIds = 0;
-let currentIndex = 0;
-let allIds = [];
-let currentUserId = null;
-let startTime = null;
-let timerInterval = null;
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// DOM elements
-const btnStart = document.getElementById('btnStart');
-const btnPause = document.getElementById('btnPause');
-const btnResume = document.getElementById('btnResume');
-const btnStop = document.getElementById('btnStop');
-const statusEl = document.getElementById('status');
-const currentIdEl = document.getElementById('currentId');
-const unfollowedCountEl = document.getElementById('unfollowedCount');
-const scannedCountEl = document.getElementById('scannedCount');
-const totalIdsEl = document.getElementById('totalIds');
-const progressFill = document.getElementById('progressFill');
-const logBox = document.getElementById('logBox');
-const maxCountInput = document.getElementById('maxCount');
-const delayTimeInput = document.getElementById('delayTime');
-const retryCountInput = document.getElementById('retryCount');
-const runTimeEl = document.getElementById('runTime');
-
-// === HÀM LOG ===
-function log(message, type = 'info') {
-    const div = document.createElement('div');
-    div.className = 'log-' + type;
-    const time = new Date().toLocaleTimeString();
-    div.textContent = '[' + time + '] ' + message;
-    logBox.appendChild(div);
-    logBox.scrollTop = logBox.scrollHeight;
-}
-
-// === HÀM TIMER ===
-function startTimer() {
-    startTime = Date.now();
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(function() {
-        var elapsed = Math.floor((Date.now() - startTime) / 1000);
-        var minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
-        var seconds = String(elapsed % 60).padStart(2, '0');
-        runTimeEl.textContent = minutes + ':' + seconds;
-    }, 1000);
-}
-
-function stopTimer() {
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-}
-
-// === LẤY USER ID ===
 function getCurrentUserId() {
     var cookies = document.cookie.split(';');
     for (var i = 0; i < cookies.length; i++) {
@@ -347,43 +17,12 @@ function getCurrentUserId() {
     return null;
 }
 
-// === LẤY DANH SÁCH ID ===
-async function getFollowingIds() {
-    log('🔄 Đang cuộn load danh sách...', 'info');
+async function unfollowAPI(userId) {
+    if (count >= MAX) return false;
     
-    for (var i = 0; i < 20; i++) {
-        window.scrollBy(0, 2000);
-        await sleep(500);
-    }
-    
-    var ids = new Set();
-    var links = document.querySelectorAll('a[href*="/user/"], a[href*="profile.php"]');
-    
-    for (var i = 0; i < links.length; i++) {
-        var match = links[i].href.match(/[?&]id=(\d+)/) || links[i].href.match(/\/(\d{7,15})(?:\/|$)/);
-        if (match && match[1] && match[1].length >= 7) {
-            ids.add(match[1]);
-        }
-    }
-    
-    var result = [];
-    for (var id of ids) {
-        result.push(id);
-    }
-    
-    log('📋 Tìm thấy ' + result.length + ' ID đang theo dõi', 'info');
-    return result;
-}
-
-function sleep(ms) {
-    return new Promise(r => setTimeout(r, ms));
-}
-
-// === GỌI API UNFOLLOW ===
-async function unfollowAPI(userId, retry = 0) {
     var actorId = getCurrentUserId();
     if (!actorId) {
-        log('❌ Không tìm thấy actor_id!', 'error');
+        console.log('❌ Không tìm thấy actor_id');
         return false;
     }
     
@@ -402,6 +41,8 @@ async function unfollowAPI(userId, retry = 0) {
             scale: 1
         };
         
+        console.log('📤 Đang hủy ID:', userId);
+        
         var body = new URLSearchParams();
         body.append('fb_dtsg', YOUR_TOKEN);
         body.append('doc_id', DOC_ID);
@@ -419,192 +60,135 @@ async function unfollowAPI(userId, retry = 0) {
         });
         
         var data = await res.json();
+        console.log('📡 Response:', JSON.stringify(data).substring(0, 300));
         
         if (data.data && (data.data.unsubscribe || data.data.success)) {
+            count++;
+            console.log('✅ #' + count + ' - Đã hủy ID: ' + userId);
+            await sleep(2000);
             return true;
         }
         
         if (data.errors) {
-            var errorMsg = data.errors[0]?.message || 'Unknown error';
-            // Nếu lỗi token hết hạn
-            if (errorMsg.indexOf('token') !== -1 || errorMsg.indexOf('expired') !== -1) {
-                log('⚠️ Token hết hạn! Cần lấy token mới.', 'error');
-            }
-            return false;
+            console.log('⚠️ Lỗi:', data.errors[0]?.message || 'Unknown');
         }
         
         return false;
         
     } catch (e) {
-        log('❌ Lỗi: ' + e.message, 'error');
+        console.log('❌ Lỗi kết nối:', e.message);
         return false;
     }
 }
 
-// === HÀM CHÍNH CHẠY UNFOLLOW ===
-async function runUnfollow() {
-    const maxCount = parseInt(maxCountInput.value) || 30;
-    const delay = parseFloat(delayTimeInput.value) || 2;
-    const maxRetry = parseInt(retryCountInput.value) || 2;
+// === QUÉT ĐÚNG DANH SÁCH "ĐANG THEO DÕI" ===
+async function getFollowingIds() {
+    console.log('🔄 Đang cuộn load danh sách "Đang theo dõi"...');
     
-    // Reset
-    unfollowedCount = 0;
-    scannedCount = 0;
-    currentIndex = 0;
-    shouldStop = false;
-    isPaused = false;
-    unfollowedCountEl.textContent = '0';
-    scannedCountEl.textContent = '0';
-    progressFill.style.width = '0%';
-    
-    log('📌 Cấu hình: Số lượng=' + maxCount + ', Delay=' + delay + 's, Thử lại=' + maxRetry + ' lần', 'info');
-    
-    // Lấy actor_id
-    currentUserId = getCurrentUserId();
-    if (!currentUserId) {
-        log('❌ Không tìm thấy user ID! F5 refresh rồi thử lại.', 'error');
-        statusEl.textContent = '❌ Lỗi';
-        isRunning = false;
-        updateButtons();
-        return;
+    // Cuộn thật nhiều lần để load hết
+    for (var i = 0; i < 30; i++) {
+        window.scrollBy(0, 2000);
+        await sleep(500);
     }
     
-    // Lấy danh sách ID
-    statusEl.textContent = '🔄 Đang quét ID...';
-    allIds = await getFollowingIds();
+    var ids = new Set();
     
-    if (allIds.length === 0) {
-        log('❌ Không tìm thấy ID nào! Vào tab "Đang theo dõi"', 'error');
-        statusEl.textContent = '❌ Không có ID';
-        isRunning = false;
-        updateButtons();
-        return;
-    }
+    // Cách 1: Lấy từ tất cả link có ID
+    var allLinks = document.querySelectorAll('a[href*="profile.php"], a[href*="/user/"]');
+    console.log('🔗 Tìm thấy ' + allLinks.length + ' link profile');
     
-    totalIds = allIds.length;
-    if (allIds.length > maxCount) {
-        allIds = allIds.slice(0, maxCount);
-        totalIds = allIds.length;
-        log('📌 Giới hạn ' + maxCount + ' tài khoản', 'info');
-    }
-    
-    totalIdsEl.textContent = totalIds;
-    statusEl.textContent = '🔄 Đang hủy...';
-    startTimer();
-    
-    // Vòng lặp chính
-    for (var i = 0; i < allIds.length; i++) {
-        // Kiểm tra dừng
-        if (shouldStop) {
-            statusEl.textContent = '⏹ Đã dừng';
-            log('⏹ Đã dừng bởi người dùng', 'warning');
-            break;
+    for (var i = 0; i < allLinks.length; i++) {
+        var match = allLinks[i].href.match(/[?&]id=(\d+)/) || allLinks[i].href.match(/\/(\d{7,15})(?:\/|$)/);
+        if (match && match[1] && match[1].length >= 7) {
+            ids.add(match[1]);
         }
-        
-        // Kiểm tra tạm dừng
-        while (isPaused) {
-            statusEl.textContent = '⏸ Đang tạm dừng';
-            await sleep(500);
-            if (shouldStop) break;
-        }
-        if (shouldStop) break;
-        
-        currentIndex = i;
-        var userId = allIds[i];
-        
-        currentIdEl.textContent = userId;
-        scannedCount = i + 1;
-        scannedCountEl.textContent = scannedCount;
-        
-        // Cập nhật progress
-        var progress = ((i + 1) / totalIds) * 100;
-        progressFill.style.width = progress + '%';
-        
-        log('🔄 [' + (i+1) + '/' + totalIds + '] Đang hủy ID: ' + userId, 'info');
-        
-        // Gọi API với số lần thử lại
-        var success = false;
-        for (var retry = 0; retry <= maxRetry; retry++) {
-            if (retry > 0) {
-                log('🔄 Thử lại lần ' + retry + ' cho ID: ' + userId, 'warning');
-                await sleep(delay * 1000);
+    }
+    
+    // Cách 2: Lấy từ avatar (ảnh đại diện)
+    var avatars = document.querySelectorAll('img[src*="avatar"]');
+    console.log('📸 Tìm thấy ' + avatars.length + ' avatar');
+    
+    for (var i = 0; i < avatars.length; i++) {
+        var parent = avatars[i].closest('a');
+        if (parent) {
+            var match = parent.href.match(/[?&]id=(\d+)/) || parent.href.match(/\/(\d{7,15})(?:\/|$)/);
+            if (match && match[1] && match[1].length >= 7) {
+                ids.add(match[1]);
             }
-            success = await unfollowAPI(userId);
-            if (success) break;
         }
-        
-        if (success) {
-            unfollowedCount++;
-            unfollowedCountEl.textContent = unfollowedCount;
-            log('✅ #' + unfollowedCount + ' - Đã hủy ID: ' + userId, 'success');
-        } else {
-            log('❌ Không hủy được ID: ' + userId + ' (đã thử ' + (maxRetry+1) + ' lần)', 'error');
-        }
-        
-        // Delay giữa các lần
-        await sleep(delay * 1000);
     }
     
-    // Kết thúc
-    stopTimer();
-    if (!shouldStop && !isPaused) {
-        statusEl.textContent = '✅ Hoàn tất';
-        log('🎉 HOÀN TẤT! Đã hủy ' + unfollowedCount + '/' + totalIds + ' tài khoản', 'success');
-        progressFill.style.width = '100%';
+    var result = [];
+    var idx = 0;
+    for (var id of ids) {
+        if (idx >= MAX) break;
+        result.push(id);
+        idx++;
     }
     
-    isRunning = false;
-    updateButtons();
+    console.log('📋 Tìm thấy ' + ids.size + ' ID đang theo dõi');
+    console.log('📋 10 ID đầu:', result.slice(0, 10));
+    return result;
 }
 
-// === CẬP NHẬT TRẠNG THÁI NÚT ===
-function updateButtons() {
-    btnStart.disabled = isRunning;
-    btnPause.disabled = !isRunning || isPaused || shouldStop;
-    btnResume.disabled = !isRunning || !isPaused || shouldStop;
-    btnStop.disabled = !isRunning;
+// === START ===
+async function start() {
+    console.log('%c🚀 UNFOLLOW - DANH SÁCH CỦA BẠN', 'font-size:20px;color:#e60023;font-weight:bold');
+    
+    // Kiểm tra URL
+    var url = window.location.href;
+    console.log('📍 URL hiện tại:', url);
+    
+    if (url.indexOf('/following') === -1) {
+        console.log('❌ Bạn đang không ở tab "Đang theo dõi"!');
+        console.log('👉 Hãy vào trang cá nhân của bạn → bấm tab "Đang theo dõi"');
+        console.log('👉 Hoặc dùng link: https://www.facebook.com/me/following');
+        return;
+    }
+    console.log('✅ Đúng! Bạn đang ở tab "Đang theo dõi"');
+    
+    var actorId = getCurrentUserId();
+    console.log('👤 User ID của bạn:', actorId);
+    
+    if (!actorId) {
+        console.log('❌ Không tìm thấy ID! F5 refresh');
+        return;
+    }
+    
+    var ids = await getFollowingIds();
+    
+    if (ids.length === 0) {
+        console.log('❌ Không tìm thấy ID nào!');
+        console.log('💡 Hãy:');
+        console.log('  1. Cuộn hết danh sách "Đang theo dõi"');
+        console.log('  2. F5 refresh');
+        console.log('  3. Chạy lại');
+        return;
+    }
+    
+    console.log('\n⏳ Bắt đầu hủy ' + ids.length + ' tài khoản...\n');
+    
+    for (var i = 0; i < ids.length; i++) {
+        console.log('--- [' + (i+1) + '/' + ids.length + '] ID: ' + ids[i] + ' ---');
+        await unfollowAPI(ids[i]);
+        if (count >= MAX) break;
+        await sleep(2000);
+    }
+    
+    console.log('\n%c🎉 HOÀN TẤT! Đã hủy ' + count + '/' + ids.length + ' tài khoản.', 'font-size:18px;color:green');
 }
 
-// === SỰ KIỆN NÚT ===
-btnStart.addEventListener('click', function() {
-    if (isRunning) return;
-    isRunning = true;
-    isPaused = false;
-    shouldStop = false;
-    log('▶ Bắt đầu...', 'info');
-    statusEl.textContent = '🔄 Đang khởi động...';
-    updateButtons();
-    runUnfollow();
-});
+// === KIỂM TRA NHANH ===
+function checkUrl() {
+    console.log('📍 URL:', window.location.href);
+    if (window.location.href.indexOf('/following') !== -1) {
+        console.log('✅ Đang ở tab "Đang theo dõi"');
+    } else {
+        console.log('❌ Đang ở:', window.location.pathname);
+        console.log('👉 Vào: https://www.facebook.com/me/following');
+    }
+}
 
-btnPause.addEventListener('click', function() {
-    if (!isRunning || isPaused) return;
-    isPaused = true;
-    statusEl.textContent = '⏸ Đang tạm dừng';
-    log('⏸ Đã tạm dừng', 'warning');
-    updateButtons();
-});
-
-btnResume.addEventListener('click', function() {
-    if (!isRunning || !isPaused) return;
-    isPaused = false;
-    statusEl.textContent = '🔄 Đang tiếp tục...';
-    log('▶ Tiếp tục...', 'info');
-    updateButtons();
-});
-
-btnStop.addEventListener('click', function() {
-    if (!isRunning) return;
-    shouldStop = true;
-    isPaused = false;
-    statusEl.textContent = '⏹ Đang dừng...';
-    log('⏹ Đang dừng...', 'warning');
-    updateButtons();
-});
-
-// === KHỞI TẠO ===
-updateButtons();
-log('📌 Sẵn sàng! Nhấn "Bắt đầu" để chạy.', 'info');
-</script>
-</body>
-</html>
+// === CHẠY ===
+console.log('\n📌 KIỂM TRA URL: checkUrl()');
+console.log('📌 CHẠY: start()');
