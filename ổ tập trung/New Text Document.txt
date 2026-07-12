@@ -1,239 +1,157 @@
-// === SCRIPT HỦY THEO DÕI - QUÉT TOÀN BỘ TRANG ===
+// === SCRIPT HỦY THEO DÕI - BẢN DÙNG CONSOLE TRỰC TIẾP (CÓ GIÁM SÁT) ===
 let count = 0;
 const MAX = 30;
 
 function sleep(ms) {
-    return new Promise(function(r) {
-        setTimeout(r, ms);
-    });
+    return new Promise(r => setTimeout(r, ms));
 }
 
-// === HỦY THEO DÕI BẰNG CÁCH TÌM NÚT 3 CHẤM GẦN NHẤT ===
-async function unfollowByThreeDots(userId) {
-    if (count >= MAX) return false;
-    
-    try {
-        console.log('🖱️ Đang xử lý ID: ' + userId);
-        
-        // Cách 1: Tìm link chứa userId và lấy container gần nhất
-        var link = document.querySelector('a[href*="' + userId + '"]');
-        if (!link) {
-            console.log('⏭️ Không tìm thấy link cho ID: ' + userId);
-            return false;
+// === LẤY TOÀN BỘ NÚT TRONG TRANG ===
+function getAllButtons() {
+    var all = [];
+    // Lấy tất cả element có role="button"
+    var btns = document.querySelectorAll('[role="button"]');
+    for (var i = 0; i < btns.length; i++) {
+        all.push(btns[i]);
+    }
+    // Lấy thêm các button thông thường
+    var btns2 = document.querySelectorAll('button');
+    for (var j = 0; j < btns2.length; j++) {
+        all.push(btns2[j]);
+    }
+    return all;
+}
+
+// === TÌM NÚT THEO DÕI BẰNG CÁCH QUÉT TOÀN BỘ ===
+function findFollowButtons() {
+    var btns = getAllButtons();
+    var results = [];
+    for (var i = 0; i < btns.length; i++) {
+        var text = btns[i].textContent || '';
+        var aria = btns[i].getAttribute('aria-label') || '';
+        // Tìm nút có chứa "Đang theo dõi" hoặc "Following"
+        if (text.indexOf('Đang theo dõi') !== -1 || 
+            text.indexOf('Following') !== -1 ||
+            aria.indexOf('Đang theo dõi') !== -1 ||
+            aria.indexOf('Following') !== -1) {
+            results.push(btns[i]);
         }
-        
-        // Tìm container lớn nhất chứa link này
-        var container = link;
-        for (var i = 0; i < 10; i++) {
-            if (container.parentElement) {
-                container = container.parentElement;
-                // Dừng khi tìm thấy container có role="article" hoặc class đặc trưng
-                if (container.getAttribute('role') === 'article' || 
-                    container.getAttribute('role') === 'listitem' ||
-                    container.className.indexOf('x1yztbdb') !== -1) {
+    }
+    return results;
+}
+
+// === HỦY THEO DÕI BẰNG CLICK TRỰC TIẾP (QUÉT TOÀN BỘ) ===
+async function unfollowByScan() {
+    if (count >= MAX) {
+        console.log('✅ Đã đạt giới hạn ' + MAX);
+        return false;
+    }
+    
+    // Tìm tất cả nút "Đang theo dõi"
+    var followBtns = findFollowButtons();
+    console.log('🔘 Tìm thấy ' + followBtns.length + ' nút "Đang theo dõi"');
+    
+    if (followBtns.length === 0) {
+        console.log('❌ Không tìm thấy nút "Đang theo dõi" nào!');
+        console.log('💡 Hãy đảm bảo bạn đang ở tab "Đang theo dõi" và đã load hết danh sách');
+        return false;
+    }
+    
+    // Lấy nút đầu tiên
+    var btn = followBtns[0];
+    
+    // Scroll đến nút
+    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    await sleep(1000);
+    
+    console.log('🔄 Click nút "Đang theo dõi"');
+    btn.click();
+    await sleep(1500);
+    
+    // Tìm nút "Bỏ theo dõi" trong menu
+    var menuItems = document.querySelectorAll('[role="menuitem"], [role="button"]');
+    for (var i = 0; i < menuItems.length; i++) {
+        var text = menuItems[i].textContent || '';
+        if (text.indexOf('Bỏ theo dõi') !== -1 || 
+            text.indexOf('Unfollow') !== -1) {
+            console.log('✅ Click "Bỏ theo dõi"');
+            menuItems[i].click();
+            await sleep(500);
+            
+            // Xác nhận nếu có popup
+            var confirms = document.querySelectorAll('[role="button"]');
+            for (var j = 0; j < confirms.length; j++) {
+                var cText = confirms[j].textContent || '';
+                if (cText.indexOf('Xác nhận') !== -1 || 
+                    cText.indexOf('Confirm') !== -1 ||
+                    cText.indexOf('Bỏ theo dõi') !== -1) {
+                    confirms[j].click();
                     break;
                 }
             }
-        }
-        
-        console.log('📦 Đã tìm thấy container');
-        
-        // === TÌM NÚT 3 CHẤM TRONG CONTAINER ===
-        var threeDots = null;
-        
-        // Tìm tất cả nút trong container
-        var allButtons = container.querySelectorAll('div[role="button"], button');
-        
-        for (var j = 0; j < allButtons.length; j++) {
-            var btn = allButtons[j];
-            var text = btn.textContent || '';
-            var html = btn.innerHTML || '';
-            var ariaLabel = btn.getAttribute('aria-label') || '';
             
-            // Kiểm tra nếu là nút 3 chấm
-            if (ariaLabel.indexOf('Hành động') !== -1 || 
-                ariaLabel.indexOf('Action') !== -1 ||
-                ariaLabel.indexOf('Thêm') !== -1 ||
-                text.trim() === '...' || 
-                text.trim() === '•••' ||
-                (html.indexOf('svg') !== -1 && html.indexOf('circle') !== -1)) {
-                threeDots = btn;
-                break;
+            count++;
+            console.log('✅ #' + count + ' - Đã hủy 1 tài khoản');
+            await sleep(2000);
+            
+            // Xóa nút đã xử lý khỏi DOM để không bị trùng
+            if (btn.parentNode) {
+                btn.style.display = 'none';
             }
+            
+            return true;
         }
-        
-        // Nếu không tìm thấy, tìm nút có icon 3 chấm bằng cách check size
-        if (!threeDots) {
-            for (var k = 0; k < allButtons.length; k++) {
-                var btn = allButtons[k];
-                var html = btn.innerHTML || '';
-                // Tìm svg có 3 dấu chấm
-                if (html.indexOf('svg') !== -1 && html.indexOf('M') !== -1) {
-                    // Kiểm tra kích thước nút nhỏ (thường là nút 3 chấm)
-                    var rect = btn.getBoundingClientRect();
-                    if (rect.width < 50 && rect.height < 50) {
-                        threeDots = btn;
-                        break;
-                    }
-                }
-            }
-        }
-        
-        if (!threeDots) {
-            console.log('⏭️ Không tìm thấy nút 3 chấm cho ID: ' + userId);
-            // Thử cách khác: tìm nút "Đang theo dõi"
-            return await tryUnfollowDirect(container);
-        }
-        
-        console.log('🔘 Click nút 3 chấm');
-        threeDots.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        await sleep(500);
-        threeDots.click();
-        await sleep(1500);
-        
-        // Tìm "Bỏ theo dõi" trong menu
-        var menuItems = document.querySelectorAll('div[role="menuitem"], div[role="button"], span');
-        for (var l = 0; l < menuItems.length; l++) {
-            var itemText = menuItems[l].textContent || '';
-            if (itemText.indexOf('Bỏ theo dõi') !== -1 || 
-                itemText.indexOf('Unfollow') !== -1 ||
-                itemText.indexOf('Ngừng theo dõi') !== -1) {
-                console.log('✅ Click "Bỏ theo dõi"');
-                menuItems[l].click();
-                await sleep(1000);
-                
-                // Xác nhận nếu có popup
-                var confirmBtns = document.querySelectorAll('div[role="button"]');
-                for (var m = 0; m < confirmBtns.length; m++) {
-                    var confirmText = confirmBtns[m].textContent || '';
-                    if (confirmText.indexOf('Xác nhận') !== -1 || 
-                        confirmText.indexOf('Confirm') !== -1 ||
-                        confirmText.indexOf('Bỏ theo dõi') !== -1) {
-                        confirmBtns[m].click();
-                        break;
-                    }
-                }
-                
-                count++;
-                console.log('✅ #' + count + ' - Đã hủy theo dõi: ' + userId);
-                await sleep(2500);
-                return true;
-            }
-        }
-        
-    } catch (e) {
-        console.log('❌ Lỗi: ' + e.message);
     }
-    return false;
-}
-
-// === PHƯƠNG ÁN DỰ PHÒNG: Tìm nút "Đang theo dõi" trực tiếp ===
-async function tryUnfollowDirect(container) {
-    try {
-        var allButtons = container.querySelectorAll('div[role="button"]');
-        for (var i = 0; i < allButtons.length; i++) {
-            var text = allButtons[i].textContent || '';
-            if (text.indexOf('Đang theo dõi') !== -1 || text.indexOf('Following') !== -1) {
-                console.log('🔘 Click nút "Đang theo dõi"');
-                allButtons[i].click();
-                await sleep(1500);
-                
-                var menuItems = document.querySelectorAll('div[role="menuitem"]');
-                for (var j = 0; j < menuItems.length; j++) {
-                    var itemText = menuItems[j].textContent || '';
-                    if (itemText.indexOf('Bỏ theo dõi') !== -1 || itemText.indexOf('Unfollow') !== -1) {
-                        menuItems[j].click();
-                        count++;
-                        console.log('✅ #' + count + ' - Đã hủy (cách cũ): ' + userId);
-                        await sleep(2500);
-                        return true;
-                    }
-                }
-            }
-        }
-    } catch (e) {}
-    return false;
-}
-
-// === QUÉT DANH SÁCH - LẤY ID TỪ LINK ===
-async function getFollowing() {
-    console.log('🔄 Đang cuộn load danh sách (15 lần)...');
     
-    for (var i = 0; i < 15; i++) {
+    return false;
+}
+
+// === CHẠY TỰ ĐỘNG ===
+async function startUnfollow() {
+    console.log('%c🚀 BẮT ĐẦU HỦY THEO DÕI - QUÉT TOÀN BỘ TRANG', 'font-size:18px;color:#e60023');
+    console.log('📌 Script sẽ tự động tìm và click các nút "Đang theo dõi"');
+    console.log('📌 Tối đa ' + MAX + ' tài khoản/lần');
+    
+    // Cuộn để load thêm
+    console.log('🔄 Đang cuộn load danh sách...');
+    for (var i = 0; i < 20; i++) {
         window.scrollBy(0, 2000);
-        await sleep(1000);
+        await sleep(800);
     }
     
-    var ids = new Set();
+    // Kiểm tra có nút không
+    var initialBtns = findFollowButtons();
+    console.log('🔘 Ban đầu tìm thấy ' + initialBtns.length + ' nút "Đang theo dõi"');
     
-    // Quét tất cả link chứa ID
-    var allLinks = document.querySelectorAll('a[href*="profile.php"], a[href*="/user/"], a[href*="facebook.com/"]');
-    console.log('🔗 Tổng link tìm thấy: ' + allLinks.length);
-    
-    for (var j = 0; j < allLinks.length; j++) {
-        var href = allLinks[j].href;
-        // Lọc ID từ URL
-        var match = href.match(/[?&]id=(\d+)/) || href.match(/\/(\d{7,15})(?:\/|$)/);
-        if (match && match[1] && match[1].length >= 7) {
-            // Bỏ qua ID của chính mình (nếu có)
-            ids.add(match[1]);
-        }
-    }
-    
-    // Loại bỏ ID trùng và chuyển thành array
-    var result = [];
-    var idx = 0;
-    for (var id of ids) {
-        if (idx >= MAX) break;
-        result.push(id);
-        idx++;
-    }
-    
-    console.log('📋 Tìm thấy ' + ids.size + ' ID khác nhau');
-    return result;
-}
-
-// === KIỂM TRA THỬ 1 ID ===
-async function testOneId() {
-    var ids = await getFollowing();
-    if (ids.length > 0) {
-        console.log('🧪 Thử với ID đầu tiên: ' + ids[0]);
-        await unfollowByThreeDots(ids[0]);
-    }
-}
-
-// === START ===
-(async function() {
-    console.log('%c🚀 BẮT ĐẦU HỦY THEO DÕI - QUÉT TOÀN TRANG (Max 30)', 'font-size:18px;color:#e60023');
-    console.log('📌 SCRIPT SẼ TÌM NÚT 3 CHẤM TRONG TOÀN BỘ TRANG');
-    
-    var ids = await getFollowing();
-    
-    if (ids.length === 0) {
-        console.log('❌ Không tìm thấy ID nào!');
-        console.log('💡 Hãy đảm bảo:');
-        console.log('  1. Đang ở tab "Đang theo dõi" của ai đó');
-        console.log('  2. Đã cuộn hết danh sách');
-        console.log('  3. F5 refresh nếu cần');
+    if (initialBtns.length === 0) {
+        console.log('❌ Không tìm thấy nút nào! Thử:');
+        console.log('1. F5 refresh trang');
+        console.log('2. Vào lại tab "Đang theo dõi"');
+        console.log('3. Đảm bảo bạn đang follow người khác');
         return;
     }
     
-    console.log('⏳ Bắt đầu xử lý ' + ids.length + ' tài khoản...');
-    console.log('📋 Danh sách ID sẽ xử lý:', ids);
-    
-    for (var i = 0; i < ids.length; i++) {
-        console.log('--- [' + (i+1) + '/' + ids.length + '] ---');
-        await unfollowByThreeDots(ids[i]);
-        if (count >= MAX) break;
-        await sleep(1000);
+    // Xử lý từng nút
+    while (count < MAX) {
+        var success = await unfollowByScan();
+        if (!success) {
+            console.log('⚠️ Không tìm thấy thêm nút nào, dừng...');
+            break;
+        }
+        
+        // Cuộn xuống để load thêm
+        if (count % 5 === 0) {
+            window.scrollBy(0, 1000);
+            await sleep(1000);
+        }
     }
     
-    console.log('%c🎉 HOÀN TẤT! Đã hủy ' + count + '/' + ids.length + ' tài khoản.', 'font-size:18px;color:green');
+    console.log('%c🎉 HOÀN TẤT! Đã hủy ' + count + ' tài khoản.', 'font-size:18px;color:green');
     
-    if (count === 0) {
-        console.log('⚠️ Không hủy được tài khoản nào!');
-        console.log('💡 Thử chạy lệnh test:');
-        console.log('   testOneId()');
-        console.log('   👉 để kiểm tra 1 ID cụ thể');
+    if (count < MAX) {
+        console.log('💡 Chạy lại script để tiếp tục hủy thêm');
     }
-})();
+}
+
+// === CHẠY ===
+startUnfollow();
