@@ -1,4 +1,4 @@
-// === UNFOLLOW - QUÉT ĐÚNG TAB "ĐANG THEO DÕI" CỦA BẠN ===
+// === UNFOLLOW - TỰ ĐỘNG CHẠY ===
 const DOC_ID = '26828219736856793';
 const YOUR_TOKEN = 'NAfxkJ83unkb5VJ6suTDgkQDiI40jI_hqVxqn-xk77X0WtvLmBhrl_A:17:1783597204';
 const MAX = 30;
@@ -19,12 +19,8 @@ function getCurrentUserId() {
 
 async function unfollowAPI(userId) {
     if (count >= MAX) return false;
-    
     var actorId = getCurrentUserId();
-    if (!actorId) {
-        console.log('❌ Không tìm thấy actor_id');
-        return false;
-    }
+    if (!actorId) return false;
     
     try {
         var variables = {
@@ -40,8 +36,6 @@ async function unfollowAPI(userId) {
             },
             scale: 1
         };
-        
-        console.log('📤 Đang hủy ID:', userId);
         
         var body = new URLSearchParams();
         body.append('fb_dtsg', YOUR_TOKEN);
@@ -60,135 +54,62 @@ async function unfollowAPI(userId) {
         });
         
         var data = await res.json();
-        console.log('📡 Response:', JSON.stringify(data).substring(0, 300));
-        
         if (data.data && (data.data.unsubscribe || data.data.success)) {
             count++;
             console.log('✅ #' + count + ' - Đã hủy ID: ' + userId);
             await sleep(2000);
             return true;
         }
-        
-        if (data.errors) {
-            console.log('⚠️ Lỗi:', data.errors[0]?.message || 'Unknown');
-        }
-        
         return false;
-        
     } catch (e) {
-        console.log('❌ Lỗi kết nối:', e.message);
+        console.log('❌ Lỗi:', e.message);
         return false;
     }
 }
 
-// === QUÉT ĐÚNG DANH SÁCH "ĐANG THEO DÕI" ===
-async function getFollowingIds() {
-    console.log('🔄 Đang cuộn load danh sách "Đang theo dõi"...');
-    
-    // Cuộn thật nhiều lần để load hết
-    for (var i = 0; i < 30; i++) {
-        window.scrollBy(0, 2000);
-        await sleep(500);
-    }
-    
-    var ids = new Set();
-    
-    // Cách 1: Lấy từ tất cả link có ID
-    var allLinks = document.querySelectorAll('a[href*="profile.php"], a[href*="/user/"]');
-    console.log('🔗 Tìm thấy ' + allLinks.length + ' link profile');
-    
-    for (var i = 0; i < allLinks.length; i++) {
-        var match = allLinks[i].href.match(/[?&]id=(\d+)/) || allLinks[i].href.match(/\/(\d{7,15})(?:\/|$)/);
-        if (match && match[1] && match[1].length >= 7) {
-            ids.add(match[1]);
-        }
-    }
-    
-    // Cách 2: Lấy từ avatar (ảnh đại diện)
-    var avatars = document.querySelectorAll('img[src*="avatar"]');
-    console.log('📸 Tìm thấy ' + avatars.length + ' avatar');
-    
-    for (var i = 0; i < avatars.length; i++) {
-        var parent = avatars[i].closest('a');
-        if (parent) {
-            var match = parent.href.match(/[?&]id=(\d+)/) || parent.href.match(/\/(\d{7,15})(?:\/|$)/);
-            if (match && match[1] && match[1].length >= 7) {
-                ids.add(match[1]);
-            }
-        }
-    }
-    
-    var result = [];
-    var idx = 0;
-    for (var id of ids) {
-        if (idx >= MAX) break;
-        result.push(id);
-        idx++;
-    }
-    
-    console.log('📋 Tìm thấy ' + ids.size + ' ID đang theo dõi');
-    console.log('📋 10 ID đầu:', result.slice(0, 10));
-    return result;
-}
-
-// === START ===
 async function start() {
-    console.log('%c🚀 UNFOLLOW - DANH SÁCH CỦA BẠN', 'font-size:20px;color:#e60023;font-weight:bold');
-    
-    // Kiểm tra URL
-    var url = window.location.href;
-    console.log('📍 URL hiện tại:', url);
-    
-    if (url.indexOf('/following') === -1) {
-        console.log('❌ Bạn đang không ở tab "Đang theo dõi"!');
-        console.log('👉 Hãy vào trang cá nhân của bạn → bấm tab "Đang theo dõi"');
-        console.log('👉 Hoặc dùng link: https://www.facebook.com/me/following');
-        return;
-    }
-    console.log('✅ Đúng! Bạn đang ở tab "Đang theo dõi"');
+    console.log('🚀 BẮT ĐẦU UNFOLLOW');
     
     var actorId = getCurrentUserId();
-    console.log('👤 User ID của bạn:', actorId);
-    
     if (!actorId) {
         console.log('❌ Không tìm thấy ID! F5 refresh');
         return;
     }
     
-    var ids = await getFollowingIds();
+    // Cuộn load danh sách
+    console.log('🔄 Đang cuộn load...');
+    for (var i = 0; i < 25; i++) {
+        window.scrollBy(0, 2000);
+        await sleep(500);
+    }
     
-    if (ids.length === 0) {
-        console.log('❌ Không tìm thấy ID nào!');
-        console.log('💡 Hãy:');
-        console.log('  1. Cuộn hết danh sách "Đang theo dõi"');
-        console.log('  2. F5 refresh');
-        console.log('  3. Chạy lại');
+    // Lấy danh sách ID
+    var ids = new Set();
+    var links = document.querySelectorAll('a[href*="profile.php"], a[href*="/user/"]');
+    for (var i = 0; i < links.length; i++) {
+        var match = links[i].href.match(/[?&]id=(\d+)/) || links[i].href.match(/\/(\d{7,15})(?:\/|$)/);
+        if (match && match[1] && match[1].length >= 7) {
+            ids.add(match[1]);
+        }
+    }
+    
+    var idList = [...ids].slice(0, MAX);
+    console.log('📋 Tìm thấy ' + ids.size + ' ID, sẽ xử lý ' + idList.length);
+    
+    if (idList.length === 0) {
+        console.log('❌ Không có ID nào! Vào tab "Đang theo dõi" và cuộn hết');
         return;
     }
     
-    console.log('\n⏳ Bắt đầu hủy ' + ids.length + ' tài khoản...\n');
-    
-    for (var i = 0; i < ids.length; i++) {
-        console.log('--- [' + (i+1) + '/' + ids.length + '] ID: ' + ids[i] + ' ---');
-        await unfollowAPI(ids[i]);
+    for (var i = 0; i < idList.length; i++) {
+        console.log('--- [' + (i+1) + '/' + idList.length + '] ID: ' + idList[i] + ' ---');
+        await unfollowAPI(idList[i]);
         if (count >= MAX) break;
         await sleep(2000);
     }
     
-    console.log('\n%c🎉 HOÀN TẤT! Đã hủy ' + count + '/' + ids.length + ' tài khoản.', 'font-size:18px;color:green');
+    console.log('🎉 HOÀN TẤT! Đã hủy ' + count + '/' + idList.length);
 }
 
-// === KIỂM TRA NHANH ===
-function checkUrl() {
-    console.log('📍 URL:', window.location.href);
-    if (window.location.href.indexOf('/following') !== -1) {
-        console.log('✅ Đang ở tab "Đang theo dõi"');
-    } else {
-        console.log('❌ Đang ở:', window.location.pathname);
-        console.log('👉 Vào: https://www.facebook.com/me/following');
-    }
-}
-
-// === CHẠY ===
-console.log('\n📌 KIỂM TRA URL: checkUrl()');
-console.log('📌 CHẠY: start()');
+// === TỰ ĐỘNG CHẠY ===
+start();
