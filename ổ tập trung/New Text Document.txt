@@ -32,12 +32,12 @@
   const autoContinueKey = "suggests_continue";
   const btnId = "fb_auto_make_friends_btn";
   const panelId = "fb_auto_make_friends_panel";
-  const unknownCandidateName = "ngÆ°á»i nÃ y";
+  const unknownCandidateName = "người này";
   let panelState = {
     added: 0,
     removed: 0,
     limit: 0,
-    status: "Äang chuáº©n bá»‹...",
+    status: "Đang chuẩn bị...",
     countdown: "--",
     config: null,
     stopping: false,
@@ -63,7 +63,7 @@
 
   const startBtn = document.createElement("button");
   startBtn.id = btnId;
-  startBtn.innerText = "Tá»± Ä‘á»™ng káº¿t báº¡n";
+  startBtn.innerText = "Tự động kết bạn";
   startBtn.style.cssText = styles.normal;
 
   startBtn.addEventListener("click", (e) => {
@@ -86,7 +86,7 @@
         <div class="fbamf-panel-head">
           <div>
             <p>TOPID Assistant</p>
-            <h3>Äang tá»± Ä‘á»™ng káº¿t báº¡n</h3>
+            <h3>Đang tự động kết bạn</h3>
           </div>
           <span class="fbamf-live">Live</span>
         </div>
@@ -97,40 +97,40 @@
           </div>
           <div class="fbamf-progress-text">
             <strong data-role="progressText">0%</strong>
-            <span data-role="remainingText">CÃ²n láº¡i 0</span>
+            <span data-role="remainingText">Còn lại 0</span>
           </div>
         </div>
 
         <div class="fbamf-status-box">
-          <span data-role="status">Äang chuáº©n bá»‹...</span>
+          <span data-role="status">Đang chuẩn bị...</span>
           <strong data-role="countdown">--</strong>
         </div>
 
         <div class="fbamf-stats">
-          <div><span>ÄÃ£ gá»­i</span><strong data-role="added">0</strong></div>
-          <div><span>Bá» qua</span><strong data-role="removed">0</strong></div>
-          <div><span>Má»¥c tiÃªu</span><strong data-role="limit">0</strong></div>
+          <div><span>Đã gửi</span><strong data-role="added">0</strong></div>
+          <div><span>Bỏ qua</span><strong data-role="removed">0</strong></div>
+          <div><span>Mục tiêu</span><strong data-role="limit">0</strong></div>
         </div>
 
         <div class="fbamf-config">
-          <div class="fbamf-config-title">Cáº¥u hÃ¬nh hiá»‡n táº¡i</div>
+          <div class="fbamf-config-title">Cấu hình hiện tại</div>
           <div class="fbamf-config-grid">
-            <span>Giá»›i tÃ­nh</span><strong data-role="configGender">Táº¥t cáº£</strong>
-            <span>Báº¡n chung</span><strong data-role="configMutual">0+</strong>
-            <span>Khoáº£ng chá»</span><strong data-role="configWait">--</strong>
+            <span>Giới tính</span><strong data-role="configGender">Tất cả</strong>
+            <span>Bạn chung</span><strong data-role="configMutual">0+</strong>
+            <span>Khoảng chờ</span><strong data-role="configWait">--</strong>
           </div>
         </div>
 
         <div class="fbamf-activity">
-          <div class="fbamf-activity-title">Hoáº¡t Ä‘á»™ng gáº§n Ä‘Ã¢y</div>
+          <div class="fbamf-activity-title">Hoạt động gần đây</div>
           <div class="fbamf-activity-list" data-role="activity">
-            <p>ChÆ°a cÃ³ hoáº¡t Ä‘á»™ng.</p>
+            <p>Chưa có hoạt động.</p>
           </div>
         </div>
 
         <div class="fbamf-actions">
-          <button type="button" data-role="configure">Äá»•i cáº¥u hÃ¬nh</button>
-          <button type="button" data-role="stop">Dá»«ng tá»± Ä‘á»™ng</button>
+          <button type="button" data-role="configure">Đổi cấu hình</button>
+          <button type="button" data-role="stop">Dừng tự động</button>
         </div>
       </div>
 
@@ -464,14 +464,14 @@
       added = 0,
       removed = 0,
       limit = 0,
-      status = "Äang cháº¡y...",
+      status = "Đang chạy...",
       countdown = "--",
       config = null,
       stopping = false,
     } = panelState;
     const panel = createControlPanel();
-    const visibleLimit = limit === Infinity ? "âˆž" : limit;
-    const remaining = limit === Infinity ? "âˆž" : Math.max(limit - added, 0);
+    const visibleLimit = limit === Infinity ? "∞" : limit;
+    const remaining = limit === Infinity ? "∞" : Math.max(limit - added, 0);
     const percent =
       limit === Infinity || !limit ? 0 : Math.min((added / limit) * 100, 100);
 
@@ -481,7 +481,7 @@
     )}%`;
     panel.querySelector(
       '[data-role="remainingText"]'
-    ).innerText = `CÃ²n láº¡i ${remaining}`;
+    ).innerText = `Còn lại ${remaining}`;
     panel.querySelector('[data-role="status"]').innerText = status;
     panel.querySelector('[data-role="countdown"]').innerText = countdown;
     panel.querySelector('[data-role="added"]').innerText = added;
@@ -495,8 +495,8 @@
     configButton.disabled = stopping;
     stopButton.classList.toggle("is-loading", stopping);
     configButton.classList.toggle("is-loading", stopping);
-    stopButton.innerText = stopping ? "Äang dá»«ng..." : "Dá»«ng tá»± Ä‘á»™ng";
-    configButton.innerText = stopping ? "Chá» dá»«ng..." : "Äá»•i cáº¥u hÃ¬nh";
+    stopButton.innerText = stopping ? "Đang dừng..." : "Dừng tự động";
+    configButton.innerText = stopping ? "Chờ dừng..." : "Đổi cấu hình";
   }
 
   function updatePanelConfig({ gender, mutualMin, waitMin, waitMax }) {
@@ -519,13 +519,13 @@
     restartAfterStop = restart;
     running = false;
     startBtn.disabled = true;
-    startBtn.innerText = restart ? "Äang dá»«ng Ä‘á»ƒ Ä‘á»•i cáº¥u hÃ¬nh..." : "Äang dá»«ng...";
+    startBtn.innerText = restart ? "Đang dừng để đổi cấu hình..." : "Đang dừng...";
     addPanelActivity(
-      restart ? "Äang dá»«ng Ä‘á»ƒ Ä‘á»•i cáº¥u hÃ¬nh..." : "Äang dá»«ng phiÃªn cháº¡y...",
+      restart ? "Đang dừng để đổi cấu hình..." : "Đang dừng phiên chạy...",
       "info"
     );
     updateControlPanel({
-      status: restart ? "Äang dá»«ng Ä‘á»ƒ Ä‘á»•i cáº¥u hÃ¬nh..." : "Äang dá»«ng...",
+      status: restart ? "Đang dừng để đổi cấu hình..." : "Đang dừng...",
       countdown: "...",
       stopping: true,
     });
@@ -533,15 +533,15 @@
 
   function getGenderLabel(gender) {
     if (gender === "MALE") return "Nam";
-    if (gender === "FEMALE") return "Ná»¯";
-    return "Táº¥t cáº£";
+    if (gender === "FEMALE") return "Nữ";
+    return "Tất cả";
   }
 
   function getRunSummaryHtml({ added, removed, limit, config, stopped }) {
-    const visibleLimit = limit === Infinity ? "KhÃ´ng giá»›i háº¡n" : limit;
+    const visibleLimit = limit === Infinity ? "Không giới hạn" : limit;
     const remaining =
-      limit === Infinity ? "KhÃ´ng giá»›i háº¡n" : Math.max(limit - added, 0);
-    const title = stopped ? "PhiÃªn Ä‘Ã£ dá»«ng hoÃ n toÃ n." : "PhiÃªn cháº¡y Ä‘Ã£ káº¿t thÃºc.";
+      limit === Infinity ? "Không giới hạn" : Math.max(limit - added, 0);
+    const title = stopped ? "Phiên đã dừng hoàn toàn." : "Phiên chạy đã kết thúc.";
     const genderLabel = getGenderLabel(config?.gender);
     const mutualLabel = `${config?.mutualMin || 0}+`;
     const waitLabel = `${config?.waitMin || 0}-${config?.waitMax || 0}s`;
@@ -549,15 +549,15 @@
     return `
       <p>${escapeHtml(title)}</p>
       <div class="fbamf-alert-summary">
-        <div><span>ÄÃ£ gá»­i</span><strong>${added}</strong></div>
-        <div><span>Bá» qua / gá»¡</span><strong>${removed}</strong></div>
-        <div><span>Má»¥c tiÃªu</span><strong>${visibleLimit}</strong></div>
-        <div><span>CÃ²n láº¡i</span><strong>${remaining}</strong></div>
+        <div><span>Đã gửi</span><strong>${added}</strong></div>
+        <div><span>Bỏ qua / gỡ</span><strong>${removed}</strong></div>
+        <div><span>Mục tiêu</span><strong>${visibleLimit}</strong></div>
+        <div><span>Còn lại</span><strong>${remaining}</strong></div>
       </div>
       <div class="fbamf-alert-detail">
-        <span>Cáº¥u hÃ¬nh</span>
+        <span>Cấu hình</span>
         <strong>${escapeHtml(
-          `Giá»›i tÃ­nh ${genderLabel}, báº¡n chung ${mutualLabel}, chá» ${waitLabel}`
+          `Giới tính ${genderLabel}, bạn chung ${mutualLabel}, chờ ${waitLabel}`
         )}</strong>
       </div>
     `;
@@ -606,9 +606,9 @@
     config,
     stopping = false,
   }) {
-    const visibleLimit = limit === Infinity ? "âˆž" : limit;
+    const visibleLimit = limit === Infinity ? "∞" : limit;
     startBtn.innerText =
-      buttonText || `Äang cháº¡y ${added}/${visibleLimit} - báº¥m Ä‘á»ƒ dá»«ng`;
+      buttonText || `Đang chạy ${added}/${visibleLimit} - bấm để dừng`;
     updateControlPanel({
       added,
       removed,
@@ -627,9 +627,9 @@
     for (const target of Array.from(
       document.querySelectorAll(
         [
-          '[aria-label="ThÃªm báº¡n bÃ¨"]',
-          '[aria-label*="Káº¿t báº¡n vá»›i"]',
-          '[aria-label*="ThÃªm báº¡n"]',
+          '[aria-label="Thêm bạn bè"]',
+          '[aria-label*="Kết bạn với"]',
+          '[aria-label*="Thêm bạn"]',
         ].join(",")
       )
     )) {
@@ -651,16 +651,16 @@
 
     if (
       target.matches?.(
-        '[aria-label="ThÃªm báº¡n bÃ¨"], [aria-label*="Káº¿t báº¡n vá»›i"], [aria-label*="ThÃªm báº¡n"]'
+        '[aria-label="Thêm bạn bè"], [aria-label*="Kết bạn với"], [aria-label*="Thêm bạn"]'
       )
     ) {
       return target;
     }
 
     return (
-      target.querySelector('[aria-label="ThÃªm báº¡n bÃ¨"]') ||
-      target.querySelector('[aria-label*="Káº¿t báº¡n vá»›i"]') ||
-      target.querySelector('[aria-label*="ThÃªm báº¡n"]')
+      target.querySelector('[aria-label="Thêm bạn bè"]') ||
+      target.querySelector('[aria-label*="Kết bạn với"]') ||
+      target.querySelector('[aria-label*="Thêm bạn"]')
     );
   }
 
@@ -686,8 +686,8 @@
 
   function isCandidateRoot(node) {
     const text = cleanCandidateText(node?.innerText || node?.textContent || "");
-    if (!text.includes("ThÃªm báº¡n bÃ¨")) return false;
-    if (!/(Gá»¡|báº¡n chung|ngÆ°á»i theo dÃµi|ÄÃ£ gá»­i lá»i má»i)/i.test(text)) return false;
+    if (!text.includes("Thêm bạn bè")) return false;
+    if (!/(Gỡ|bạn chung|người theo dõi|Đã gửi lời mời)/i.test(text)) return false;
 
     const hasName =
       Array.from(node.querySelectorAll?.('a[href], img[alt]') || []).some(
@@ -710,7 +710,7 @@
 
     const root = getCandidateRoot(target);
     const removeBtns = Array.from(
-      root.querySelectorAll('[aria-label*="XÃ³a"], [aria-label*="Gá»¡"]')
+      root.querySelectorAll('[aria-label*="Xóa"], [aria-label*="Gỡ"]')
     );
     return removeBtns[removeBtns.length - 1] || null;
   }
@@ -760,8 +760,8 @@
     const ariaLabel = target?.getAttribute?.("aria-label") || "";
     const ariaName = cleanCandidateName(
       ariaLabel
-        .replace(/^Káº¿t báº¡n vá»›i\s+/i, "")
-        .replace(/^ThÃªm báº¡n bÃ¨\s*/i, "")
+        .replace(/^Kết bạn với\s+/i, "")
+        .replace(/^Thêm bạn bè\s*/i, "")
     );
     if (ariaName) return ariaName;
 
@@ -819,16 +819,16 @@
   function cleanCandidateName(value = "") {
     const text = cleanCandidateText(value)
       .replace(/\s+/g, " ")
-      .replace(/^Káº¿t báº¡n vá»›i\s+/i, "")
-      .replace(/^áº¢nh Ä‘áº¡i diá»‡n cá»§a\s+/i, "")
+      .replace(/^Kết bạn với\s+/i, "")
+      .replace(/^Ảnh đại diện của\s+/i, "")
       .replace(/^Profile picture of\s+/i, "")
       .trim();
 
     if (!text) return "";
     if (text.length > 60) return "";
-    if (/ThÃªm báº¡n|Gá»¡|Há»§y lá»i má»i|ÄÃ£ gá»­i lá»i má»i/i.test(text)) return "";
-    if (/^(ThÃªm báº¡n bÃ¨|Gá»¡|Há»§y lá»i má»i|ÄÃ£ gá»­i lá»i má»i)$/i.test(text)) return "";
-    if (/báº¡n chung|ngÆ°á»i theo dÃµi|khÃ¡c theo dÃµi/i.test(text)) return "";
+    if (/Thêm bạn|Gỡ|Hủy lời mời|Đã gửi lời mời/i.test(text)) return "";
+    if (/^(Thêm bạn bè|Gỡ|Hủy lời mời|Đã gửi lời mời)$/i.test(text)) return "";
+    if (/bạn chung|người theo dõi|khác theo dõi/i.test(text)) return "";
     if (/^\d+$/.test(text)) return "";
 
     return text;
@@ -842,7 +842,7 @@
   }
 
   function formatCandidateAction(action, name, detail = "") {
-    const separator = /(cho|qua|gá»¡)$/i.test(action.trim()) ? " " : ": ";
+    const separator = /(cho|qua|gỡ)$/i.test(action.trim()) ? " " : ": ";
     return `${action}${separator}${name || unknownCandidateName}${
       detail ? `: ${detail}` : ""
     }`;
@@ -876,7 +876,7 @@
 
   function getTitle() {
     const titles = Array.from(document.querySelectorAll("h1"));
-    const suggest_title = titles.find((t) => t.textContent == "Gá»£i Ã½");
+    const suggest_title = titles.find((t) => t.textContent == "Gợi ý");
 
     if (suggest_title) {
       suggest_mode = true;
@@ -885,7 +885,7 @@
 
     const title = Array.from(
       document.querySelectorAll('.html-h2 a[href$="friends"]')
-    ).find((_) => _.textContent == "Báº¡n bÃ¨");
+    ).find((_) => _.textContent == "Bạn bè");
 
     if (title) {
       suggest_mode = false;
@@ -946,7 +946,7 @@
       added: 0,
       removed: 0,
       limit,
-      status: "Äang chuáº©n bá»‹...",
+      status: "Đang chuẩn bị...",
       countdown: "--",
       config: currentConfig,
       stopping: false,
@@ -958,14 +958,14 @@
       added: 0,
       removed: 0,
       limit,
-      status: "Äang quÃ©t danh sÃ¡ch gá»£i Ã½...",
+      status: "Đang quét danh sách gợi ý...",
       countdown: "--",
       config: currentConfig,
     });
     while (running) {
       const btns = suggest_mode
         ? getSuggestTargets()
-        : document.querySelectorAll('[aria-label="ThÃªm báº¡n bÃ¨"]');
+        : document.querySelectorAll('[aria-label="Thêm bạn bè"]');
 
       for (let btn of Array.from(btns)) {
         if (added.includes(btn)) continue;
@@ -1000,7 +1000,7 @@
                 added: added.length,
                 removed: removed.length,
                 limit,
-                status: `Äang táº£i thÃªm gá»£i Ã½ láº§n ${tryCount}`,
+                status: `Đang tải thêm gợi ý lần ${tryCount}`,
                 countdown: `${~~(timeleft / 1000)}s`,
                 config: currentConfig,
                 stopping: stopRequested,
@@ -1021,15 +1021,15 @@
           });
 
           const shouldReload = await sleep(
-            5000,
+            60000,
             (timeLeft) => {
               setRunState({
                 added: added.length,
                 removed: removed.length,
                 limit,
                 status: stopRequested
-                  ? "Äang dá»«ng phiÃªn cháº¡y..."
-                  : "Háº¿t gá»£i Ã½ hiá»‡n táº¡i, chuáº©n bá»‹ táº£i láº¡i trang",
+                  ? "Đang dừng phiên chạy..."
+                  : "Hết gợi ý hiện tại, chuẩn bị tải lại trang",
                 countdown: stopRequested ? "..." : `${~~(timeLeft / 1000)}s`,
                 config: currentConfig,
                 stopping: stopRequested,
@@ -1055,7 +1055,7 @@
         added: added.length,
         removed: removed.length,
         limit,
-        status: "Äang chá»n ngÆ°á»i tiáº¿p theo...",
+        status: "Đang chọn người tiếp theo...",
         countdown: "--",
         config: currentConfig,
       });
@@ -1084,7 +1084,7 @@
           let text = "";
           if (suggest_mode) {
             text = getCandidateRoot(btn)?.querySelector?.(
-              '[aria-labelledby$=" báº¡n chung"]'
+              '[aria-labelledby$=" bạn chung"]'
             )?.textContent;
           } else {
             const href = closest(btn, "a[href]");
@@ -1097,7 +1097,7 @@
           console.log("mutual", mutabelFriend);
           if (mutabelFriend < mutualMin) {
             willAdd = false;
-            skipReason = `chá»‰ cÃ³ ${mutabelFriend} báº¡n chung, yÃªu cáº§u tá»‘i thiá»ƒu ${mutualMin}`;
+            skipReason = `chỉ có ${mutabelFriend} bạn chung, yêu cầu tối thiểu ${mutualMin}`;
           }
         }
 
@@ -1114,8 +1114,8 @@
               willAdd = false;
               skipReason =
                 gender === "MALE"
-                  ? "khÃ´ng khá»›p bá»™ lá»c giá»›i tÃ­nh nam"
-                  : "khÃ´ng khá»›p bá»™ lá»c giá»›i tÃ­nh ná»¯";
+                  ? "không khớp bộ lọc giới tính nam"
+                  : "không khớp bộ lọc giới tính nữ";
             }
           }
         }
@@ -1126,7 +1126,7 @@
             added: added.length,
             removed: removed.length,
             limit,
-            status: formatCandidateAction("Äang gá»­i lá»i má»i cho", candidate.name),
+            status: formatCandidateAction("Đang gửi lời mời cho", candidate.name),
             countdown: "--",
             config: currentConfig,
           });
@@ -1135,10 +1135,10 @@
           console.log("Added");
 
           const addFriendBtn = getAddFriendButton(btn, suggest_mode);
-          if (!addFriendBtn) throw new Error("KhÃ´ng tÃ¬m tháº¥y nÃºt thÃªm báº¡n");
+          if (!addFriendBtn) throw new Error("Không tìm thấy nút thêm bạn");
           addFriendBtn.click();
           addPanelActivity(
-            formatCandidateAction("ÄÃ£ gá»­i lá»i má»i cho", candidate.name),
+            formatCandidateAction("Đã gửi lời mời cho", candidate.name),
             "add"
           );
           await countUp();
@@ -1146,7 +1146,7 @@
             added: added.length,
             removed: removed.length,
             limit,
-            status: "ÄÃ£ gá»­i lá»i má»i, chuáº©n bá»‹ lÆ°á»£t tiáº¿p theo",
+            status: "Đã gửi lời mời, chuẩn bị lượt tiếp theo",
             countdown: "--",
             config: currentConfig,
           });
@@ -1159,7 +1159,7 @@
             added: added.length,
             removed: removed.length,
             limit,
-            status: formatCandidateAction("Äang bá» qua", candidate.name),
+            status: formatCandidateAction("Đang bỏ qua", candidate.name),
             countdown: "--",
             config: currentConfig,
           });
@@ -1177,9 +1177,9 @@
 
           addPanelActivity(
             formatCandidateAction(
-              removedFromSuggest ? "Bá» qua vÃ  gá»¡" : "Bá» qua",
+              removedFromSuggest ? "Bỏ qua và gỡ" : "Bỏ qua",
               candidate.name,
-              skipReason || "khÃ´ng Ä‘áº¡t bá»™ lá»c"
+              skipReason || "không đạt bộ lọc"
             ),
             "skip"
           );
@@ -1190,9 +1190,9 @@
         removed.push(btn);
         addPanelActivity(
           formatCandidateAction(
-            "Bá» qua",
+            "Bỏ qua",
             candidate.name,
-            e?.message || "khÃ´ng xá»­ lÃ½ Ä‘Æ°á»£c má»¥c nÃ y"
+            e?.message || "không xử lý được mục này"
           ),
           "error"
         );
@@ -1200,7 +1200,7 @@
           added: added.length,
           removed: removed.length,
           limit,
-          status: "Má»™t má»¥c bá»‹ lá»—i, Ä‘Ã£ bá» qua vÃ  tiáº¿p tá»¥c",
+          status: "Một mục bị lỗi, đã bỏ qua và tiếp tục",
           countdown: "--",
           config: currentConfig,
         });
@@ -1215,7 +1215,7 @@
               added: added.length,
               removed: removed.length,
               limit,
-              status: "Äang chá» trÆ°á»›c lÆ°á»£t tiáº¿p theo",
+              status: "Đang chờ trước lượt tiếp theo",
               countdown: `${~~(timeleft / 1000)}s`,
               config: currentConfig,
               stopping: stopRequested,
@@ -1228,22 +1228,22 @@
         await sleep(100);
       }
     }
-    startBtn.innerText = "Tá»± Ä‘á»™ng káº¿t báº¡n";
+    startBtn.innerText = "Tự động kết bạn";
     startBtn.disabled = false;
     startBtn.style.cssText = styles.normal;
     setRunState({
       added: added.length,
       removed: removed.length,
       limit,
-      status: stopRequested ? "ÄÃ£ dá»«ng phiÃªn cháº¡y" : "ÄÃ£ hoÃ n táº¥t phiÃªn cháº¡y",
+      status: stopRequested ? "Đã dừng phiên chạy" : "Đã hoàn tất phiên chạy",
       countdown: stopRequested ? "Stop" : "Done",
-      buttonText: "Tá»± Ä‘á»™ng káº¿t báº¡n",
+      buttonText: "Tự động kết bạn",
       config: currentConfig,
       stopping: false,
     });
 
     if (restartAfterStop) {
-      addPanelActivity("Äang má»Ÿ láº¡i cáº¥u hÃ¬nh...", "info");
+      addPanelActivity("Đang mở lại cấu hình...", "info");
       await sleep(500);
       const nextConfig = await getConfig();
       if (nextConfig) {
@@ -1253,7 +1253,7 @@
       }
       restartAfterStop = false;
       await showAlert({
-        title: "ÄÃ£ dá»«ng tá»± Ä‘á»™ng",
+        title: "Đã dừng tự động",
         html: getRunSummaryHtml({
           added: added.length,
           removed: removed.length,
@@ -1262,7 +1262,7 @@
           stopped: true,
         }),
         type: "info",
-        confirmText: "ÄÃ£ hiá»ƒu",
+        confirmText: "Đã hiểu",
       });
       removeControlPanel();
       return;
@@ -1270,7 +1270,7 @@
 
     if (stopRequested) {
       await showAlert({
-        title: "ÄÃ£ dá»«ng tá»± Ä‘á»™ng",
+        title: "Đã dừng tự động",
         html: getRunSummaryHtml({
           added: added.length,
           removed: removed.length,
@@ -1291,7 +1291,7 @@
     console.log("added", added, "removed", removed);
 
     showAlert({
-      title: "HoÃ n táº¥t tá»± Ä‘á»™ng káº¿t báº¡n",
+      title: "Hoàn tất tự động kết bạn",
       html: getRunSummaryHtml({
         added: added.length,
         removed: removed.length,
@@ -1304,4 +1304,3 @@
     });
   }
 })();
-
