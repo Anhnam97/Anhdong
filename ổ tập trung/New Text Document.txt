@@ -1,1 +1,443 @@
+// ============================================
+// SỬA LẠI HÀM loadInteractionFriends() - XỬ LÝ LỖI KẾT NỐI
+// ============================================
 
+async loadInteractionFriends() {
+    try {
+        this.loadingInteraction = 0;
+        
+        // KIỂM TRA KẾT NỐI TRƯỚC
+        const isConnected = await this.checkFacebookConnection();
+        if (!isConnected) {
+            this.loadingInteraction = null;
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi kết nối',
+                html: 'Vui lòng kiểm tra tài khoản Facebook của bạn và sau đó nhấn thử lại.',
+                confirmButtonText: 'Thử lại',
+                allowOutsideClick: false
+            }).then(result => {
+                if (result.isConfirmed) {
+                    this.loadInteractionFriends();
+                }
+            });
+            return;
+        }
+
+        // KIỂM TRA TOKEN
+        const token = await this.loadAccessTokenVIP();
+        if (!token) {
+            this.loadingInteraction = null;
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi xác thực',
+                html: 'Không thể lấy Access Token. Vui lòng đăng nhập lại.',
+                confirmButtonText: 'Thử lại',
+                allowOutsideClick: false
+            }).then(result => {
+                if (result.isConfirmed) {
+                    this.loadInteractionFriends();
+                }
+            });
+            return;
+        }
+
+        let endCursor = undefined;
+        let posts = [];
+        let maxRetries = 3;
+        let retryCount = 0;
+
+        // Tải bài viết với retry
+        while (posts.length < 100 && retryCount < maxRetries) {
+            try {
+                // THÊM TIMEOUT CHO API CALL
+                const result = await Promise.race([
+                    getPosts(endCursor),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Timeout')), 30000)
+                    )
+                ]);
+                
+                if (!result || !result.posts || result.posts.length === 0) {
+                    retryCount++;
+                    if (retryCount < maxRetries) {
+                        await this.delay(3000);
+                        continue;
+                    }
+                    break;
+                }
+
+                posts = posts.concat(result.posts);
+                endCursor = result.endCursor;
+                this.loadingInteraction = Math.min(40, Math.round(40 * posts.length / 100));
+                
+                if (!endCursor) break;
+                retryCount = 0;
+                
+            } catch (error) {
+                console.error('Lỗi tải bài viết:', error);
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    await this.delay(5000);
+                } else {
+                    throw new Error('Không thể tải bài viết sau 3 lần thử');
+                }
+            }
+        }
+
+        if (posts.length === 0) {
+            this.loadingInteraction = null;
+            Swal.fire({
+                icon: 'warning',
+                title: 'Không tìm thấy bài viết',
+                text: 'Không thể lấy bài viết từ Facebook. Vui lòng thử lại sau.',
+                confirmButtonText: 'Thử lại'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    this.loadInteractionFriends();
+                }
+            });
+            return;
+        }
+
+        // Lấy reactors với xử lý lỗi
+        let reactors = [];
+        let reactorEndCursor = undefined;
+        let reactorErrors = 0;
+        
+        for (let i = 0; i < Math.min(posts.length, 100); i++) {
+            try {
+                const post = posts[i];
+                let page = 0;
+                let hasMore = true;
+                
+                while (hasMore && page < 3) { // Giảm từ 5 xuống 3
+                    try {
+                        const result = await Promise.race([
+                            getReactors(post.id, reactorEndCursor),
+                            new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('Timeout')), 15000)
+                            )
+                        ]);
+                        
+                        if (!result || !result.reactors) break;
+                        
+                        reactors = reactors.concat(result.reactors);
+                        reactorEndCursor = result.endCursor;
+                        hasMore = !!result.endCursor;
+                        page++;
+                        
+                        this.loadingInteraction = 40 + Math.round(30 * (i + 1) / Math.min(posts.length, 100));
+                        
+                    } catch (error) {
+                        console.error('Lỗi tải reactors page:', error);
+                        reactorErrors++;
+                        if (reactorErrors > 5) throw new Error('Quá nhiều lỗi khi tải reactors');
+                        await this.delay(2000);
+                        break;
+                    }
+                }
+            } catch (error) {
+                console.error('Lỗi tải reactors:', error);
+                continue;
+            }
+        }
+
+        // Lấy commenters với xử lý lỗi tương tự
+        let commenters = [];
+        let commentEndCursor = undefined;
+        let commentErrors = 0;
+        
+        for (let i = 0; i < Math.min(posts.length, 100); i++) {
+            try {
+                const post = posts[i];
+                let page = 0;
+                let hasMore = true;
+                
+                while (hasMore && page < 3) {
+                    try {
+                        const result = await Promise.race([
+                            getCommenters(post.id, commentEndCursor),
+                            new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('Timeout')), 15000)
+                            )
+                        ]);
+                        
+                        if (!result || !result.commenters) break;
+                        
+                        commenters = commenters.concat(result.commenters);
+                        commentEndCursor = result.endCursor;
+                        hasMore = !!result.endCursor;
+                        page++;
+                        
+                        this.loadingInteraction = 70 + Math.round(30 * (i + 1) / Math.min(posts.length, 100));
+                        
+                    } catch (error) {
+                        console.error('Lỗi tải commenters page:', error);
+                        commentErrors++;
+                        if (commentErrors > 5) throw new Error('Quá nhiều lỗi khi tải commenters');
+                        await this.delay(2000);
+                        break;
+                    }
+                }
+            } catch (error) {
+                console.error('Lỗi tải commenters:', error);
+                continue;
+            }
+        }
+
+        // Lấy messages với fallback
+        let messages = [];
+        try {
+            const messageResult = await Promise.race([
+                getMessages(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout')), 20000)
+                )
+            ]);
+            if (messageResult) {
+                messages = messageResult;
+            }
+        } catch (error) {
+            console.error('Lỗi tải messages:', error);
+            // Không throw error, tiếp tục với messages rỗng
+        }
+
+        // Tạo map và gán dữ liệu
+        const interactionMap = this.buildInteractionMap(reactors, commenters, messages);
+        
+        this.friends.forEach(friend => {
+            if (interactionMap[friend.id]) {
+                friend.interaction = interactionMap[friend.id];
+            } else {
+                friend.interaction = { reactions: 0, comments: 0, messages: 0 };
+            }
+        });
+
+        // Lưu vào store
+        if (window.store && window.store.state) {
+            window.store.state.friends = this.friends;
+        }
+
+        this.loadingInteraction = 100;
+        
+        // THÔNG BÁO THÀNH CÔNG
+        const totalWithInteraction = Object.keys(interactionMap).length;
+        Swal.fire({
+            icon: 'success',
+            title: 'Tải dữ liệu thành công',
+            html: `Đã tải tương tác của <b>${totalWithInteraction}</b> bạn bè từ <b>${Math.min(posts.length, 100)}</b> bài viết.`
+        });
+
+    } catch (error) {
+        console.error('Lỗi loadInteractionFriends:', error);
+        this.loadingInteraction = null;
+        
+        let errorMessage = 'Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại.';
+        if (error.message === 'Timeout') {
+            errorMessage = 'Kết nối quá chậm. Vui lòng kiểm tra mạng và thử lại.';
+        } else if (error.message === 'Không thể tải bài viết sau 3 lần thử') {
+            errorMessage = 'Không thể tải bài viết. Vui lòng kiểm tra tài khoản Facebook của bạn.';
+        }
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi kết nối',
+            html: errorMessage,
+            confirmButtonText: 'Thử lại',
+            allowOutsideClick: false
+        }).then(result => {
+            if (result.isConfirmed) {
+                this.loadInteractionFriends();
+            }
+        });
+    }
+}
+
+// ============================================
+// HÀM KIỂM TRA KẾT NỐI
+// ============================================
+
+async checkFacebookConnection() {
+    try {
+        // Kiểm tra xem có đang đăng nhập Facebook không
+        const response = await fetch('https://www.facebook.com/me', {
+            method: 'HEAD',
+            credentials: 'include',
+            mode: 'same-origin'
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Lỗi kiểm tra kết nối:', error);
+        return false;
+    }
+}
+
+// ============================================
+// HÀM XÂY DỰNG MAP TƯƠNG TÁC
+// ============================================
+
+buildInteractionMap(reactors, commenters, messages) {
+    const map = {};
+    
+    // Xử lý reactors
+    reactors.forEach(reactor => {
+        if (!map[reactor.id]) {
+            map[reactor.id] = { reactions: 0, comments: 0, messages: 0 };
+        }
+        map[reactor.id].reactions++;
+    });
+
+    // Xử lý commenters
+    commenters.forEach(commenter => {
+        if (!map[commenter.id]) {
+            map[commenter.id] = { reactions: 0, comments: 0, messages: 0 };
+        }
+        map[commenter.id].comments++;
+    });
+
+    // Xử lý messages
+    messages.forEach(msg => {
+        if (!map[msg.id]) {
+            map[msg.id] = { reactions: 0, comments: 0, messages: 0 };
+        }
+        map[msg.id].messages = msg.count || 0;
+    });
+
+    return map;
+}
+
+// ============================================
+// HÀM DELAY
+// ============================================
+
+delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ============================================
+// SỬA HÀM submitFilterFriends() - THÊM KIỂM TRA
+// ============================================
+
+submitFilterFriends() {
+    // KIỂM TRA ĐÃ TẢI DỮ LIỆU CHƯA
+    if (this.loadingInteraction === null || this.loadingInteraction < 100) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Chưa có dữ liệu tương tác',
+            html: 'Vui lòng tải dữ liệu tương tác trước khi lọc.<br>Nhấn vào link <b>"(Tải dữ liệu)"</b> ở mục "Mức độ tương tác với bạn".',
+            confirmButtonText: 'Đã hiểu'
+        });
+        return;
+    }
+
+    this.filterFriends = this.friends.filter(friend => {
+        // ========== XỬ LÝ LỌC TƯƠNG TÁC ==========
+        if (this.filterOption.interaction) {
+            if (!friend.active) return false;
+            
+            const totalInteraction = (friend.interaction?.reactions || 0) + 
+                                    (friend.interaction?.comments || 0) + 
+                                    (friend.interaction?.messages || 0);
+            
+            switch (this.filterOption.interactionValue) {
+                case 'NOT_INTERACTION':
+                    if (totalInteraction !== 0) return false;
+                    break;
+                    
+                case 'REACTION':
+                    if ((friend.interaction?.reactions || 0) >= this.filterOption.reactionValue) {
+                        return false;
+                    }
+                    break;
+                    
+                case 'COMMENT':
+                    if ((friend.interaction?.comments || 0) >= this.filterOption.commentValue) {
+                        return false;
+                    }
+                    break;
+                    
+                case 'MESSAGE':
+                    if ((friend.interaction?.messages || 0) >= this.filterOption.messageValue) {
+                        return false;
+                    }
+                    break;
+                    
+                case 'INTERACTION_NUMBER':
+                    if (totalInteraction >= this.filterOption.interactionNumberValue) {
+                        return false;
+                    }
+                    break;
+                    
+                default:
+                    break;
+            }
+        }
+
+        // ========== GIỮ NGUYÊN CÁC BỘ LỌC KHÁC ==========
+        // Lọc giới tính
+        if (this.filterOption.gender) {
+            if (!friend.gender || !this.filterOption.genderValue.includes(friend.gender)) {
+                return false;
+            }
+        }
+
+        // Lọc tài khoản bị khóa
+        if (this.filterOption.accountLocked) {
+            if (friend.active !== false) return false;
+        }
+
+        // Lọc tên chứa ký tự đặc biệt
+        if (this.filterOption.strangeName) {
+            if (VIETNAMESE_REGEX.test(friend.name.normalize('NFC'))) return false;
+        }
+
+        // Lọc không có ảnh đại diện
+        if (this.filterOption.noAvatar) {
+            if (friend.hasAvatar !== false) return false;
+        }
+
+        // Lọc số bạn chung
+        if (this.filterOption.mutualFriends) {
+            if (!friend.mutualFriendsCount || 
+                friend.mutualFriendsCount >= this.filterOption.mutualFriendsValue) {
+                return false;
+            }
+        }
+
+        // Lọc quốc gia không phải Việt Nam
+        if (this.filterOption.noVietnamese) {
+            if (!friend.locale || 
+                friend.locale === 'vi_VN' || 
+                friend.location === 'VN' || 
+                friend.hometown === 'VN') {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    // Gán selected = false cho tất cả kết quả
+    this.filterFriends = this.filterFriends.map(friend => ({
+        ...friend,
+        selected: false
+    }));
+
+    this.isNotSubmit = false;
+
+    // Thông báo kết quả
+    if (this.filterFriends.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Không tìm thấy bạn bè',
+            text: 'Không có bạn bè nào phù hợp với điều kiện lọc của bạn.'
+        });
+    } else {
+        Swal.fire({
+            icon: 'success',
+            title: 'Tìm thấy kết quả',
+            text: `Có ${this.filterFriends.length} bạn bè phù hợp với điều kiện lọc.`
+        });
+    }
+}
