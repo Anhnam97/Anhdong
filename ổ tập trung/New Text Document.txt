@@ -1,11 +1,40 @@
+// ============================================
+// FILE: global-variable.js - CRACK VIP HOÀN CHỈNH
+// ============================================
+
+// ============================================
+// PHẦN 1: CRACK VIP - SET BIẾN TOÀN CỤC
+// ============================================
+
 var noClickMode = false;
 var debugMode = true;
 var hideCSSMode = true;
-//Phải check các biến trên trước khi xuất bản cho người dùng
+
+// ============================================
+// === CRACK VIP: THÊM BIẾN VIP ===
+// ============================================
+var proUser = true;
+var ExpiredDay = "31/12/2099";
+var remaining = 99999;
+var limitAddByDay_freelimit = 999999;
+var isVip = true;
+var vipLevel = 999;
+var disableUpdate = true;
+
+// === LƯU VÀO LOCALSTORAGE ===
+try {
+    localStorage.setItem('proUser', 'true');
+    localStorage.setItem('ExpiredDay', '31/12/2099');
+    localStorage.setItem('vipLevel', '999');
+    localStorage.setItem('limitAddByDay_freelimit', '999999');
+    localStorage.setItem('isVip', 'true');
+    localStorage.setItem('disableUpdate', 'true');
+} catch(e) {}
+
+console.log('✅ VIP ACTIVATED - MỞ KHÓA TOÀN BỘ CHỨC NĂNG');
 
 //ĐỊNH NGHĨA TEXT
 const introText_g = ["Giới thiệu", "Thông tin cá nhân", "Bài viết","Ảnh","Bạn bè"];
-
 
 var kbdp_link = "https://www.facebook.com/friends/suggestions?actions=kbdp";
 var kbdp_link_2 = "https://www.facebook.com/friends/suggestions?actions=kbdp";
@@ -14,22 +43,18 @@ if(location.href.indexOf("/friends?actions=kbdp") > -1){
 	location.href = kbdp_link;
 }
 
-
 //PUBLIC FUNCTIONS & VARIABLE
 const add_button_selector = 'div[aria-label*="Kết bạn với"][tabindex="0"]:not([aria-disabled="true"])';
 
 /** CÁC BIẾN TASK ĐIỀU KHIỂN HOẠT ĐỘNG INTERVAL & TIMEOUT **/
 var startCountDownTask, loadMoreTask, syncCountTask, addFriendTask, scanAvailableFriendTask;
 
-
-
 //SELECTOR define Start !
 function combineLine_and_save(variable) {
-    // Xử lý dồn về 1 hàng, chỉ gọi khi text có nhiều hàng
-    variable = variable.replace(/[\n\t]+/g, ' ') // Thay thế các ký tự xuống dòng và tab bằng khoảng trắng
-                       .replace(/\s+/g, ' ') // Thay thế nhiều khoảng trắng thành một khoảng trắng
-                       .trim(); // Loại bỏ khoảng trắng ở đầu và cuối
-    return variable; // Trả về kết quả
+    variable = variable.replace(/[\n\t]+/g, ' ')
+                       .replace(/\s+/g, ' ')
+                       .trim();
+    return variable;
 }
 
 var SELECTOR = {
@@ -40,22 +65,22 @@ var SELECTOR = {
 	InRightPanel : {},
 	NotPanel : {}
 }
+
 //LEFT PANEL Selectors
 SELECTOR.InLeftPanel.AddButton = `
 	${SELECTOR.LeftPanel} div[aria-label^="Kết bạn"]:not([aria-disabled="true"]):not(${SELECTOR.ScannedFriend}),
 	${SELECTOR.LeftPanel} div[aria-label^="Thêm bạn"]:not([aria-disabled="true"]):not(${SELECTOR.ScannedFriend})
 `;
-combineLine_and_save(SELECTOR.InLeftPanel.AddButton);//Để cho dễ sửa, Xử lý dồn về 1 hàng, chỉ gọi khi text có nhiều hàng
+combineLine_and_save(SELECTOR.InLeftPanel.AddButton);
 
 SELECTOR.InLeftPanel.RemoveButton = `
 	${SELECTOR.LeftPanel} div[aria-label^="Xóa"][role="button"]:not([aria-disabled="true"]),
 	${SELECTOR.LeftPanel} div[aria-label^="Gỡ"][role="button"]:not([aria-disabled="true"])
 `;
-combineLine_and_save(SELECTOR.InLeftPanel.RemoveButton);//Để cho dễ sửa, Xử lý dồn về 1 hàng, chỉ gọi khi text có nhiều hàng
-
+combineLine_and_save(SELECTOR.InLeftPanel.RemoveButton);
 
 //RIGHT PANEL Selectors
-SELECTOR.InRightPanel.FriendName = `${SELECTOR.RightPanel} h1, ${SELECTOR.RightPanel} svg[aria-label]`;//Fix v7.3.0 update tách thành lấy inner của h1 hoặc lấy attr aria-label bên xử lý tại getRightPaneFriendlName
+SELECTOR.InRightPanel.FriendName = `${SELECTOR.RightPanel} h1, ${SELECTOR.RightPanel} svg[aria-label]`;
 SELECTOR.InRightPanel.IntroTitle = `${SELECTOR.RightPanel} h2`;
 
 //NOT PANEL Selectos
@@ -63,29 +88,26 @@ SELECTOR.NotPanel.AddButton = `
 	div[aria-label^="Kết bạn"]:not([aria-disabled="true"]):not(${SELECTOR.ScannedFriend}),
 	div[aria-label^="Thêm bạn"]:not([aria-disabled="true"]):not(${SELECTOR.ScannedFriend})
 `;
-combineLine_and_save(SELECTOR.NotPanel.AddButton);//Để cho dễ sửa, Xử lý dồn về 1 hàng, chỉ gọi khi text có nhiều hàng
+combineLine_and_save(SELECTOR.NotPanel.AddButton);
 
 SELECTOR.NotPanel.RemoveButton = `
 	div[aria-label^="Xóa"][role="button"]:not([aria-disabled="true"]),
 	div[aria-label^="Gỡ"][role="button"]:not([aria-disabled="true"])
 `;
-combineLine_and_save(SELECTOR.NotPanel.RemoveButton);//Để cho dễ sửa, Xử lý dồn về 1 hàng, chỉ gọi khi text có nhiều hàng
-
+combineLine_and_save(SELECTOR.NotPanel.RemoveButton);
 
 let friendsInReview;
 
-var timeoutWaitTask = 15000; //Timeout task when into friend
+var timeoutWaitTask = 15000;
 
 //Scan Config
-var configList;//Lưu config từ settings value
-
-var placeList;//Placelist user config từ các checkbox lựa chọn
-var otherPlaceText_g;//Placelist tăng cường
-var placeListAll;//Gộp 2 placelist lại để sử dụng chung
-
-var genderList = []; /** Trường hợp không xác định được chưa tính **/
-var RemoveFriendList = ''; /** Lưu danh sách bạn không hợp lệ để xóa **/
-var chooseSpeed = 2000; /** Load friend speed  | default = 3000 **/
+var configList;
+var placeList;
+var otherPlaceText_g;
+var placeListAll;
+var genderList = [];
+var RemoveFriendList = '';
+var chooseSpeed = 2000;
 var addSpeed = 2000;
 var removeSpeed = 0;
 var syncSpeed = 10000;
@@ -94,30 +116,19 @@ var refreshMin  = 5;
 var speedShowNotice = 30000;
 var showNoticeDuring = 10000;
 var delayToNextFriend = 2000;
-var abortDialogTask;//Tự click đóng dialog
-
-/** Cơ chế thông báo theo version, theo số cấp :
- * Tool chỉ hiện thông báo update có khác biệt phiên bản ở 3 phần tử version đầu, từ x.y.xx.yy thì xx.yy là các bản update fix lỗi nhỏ ko dc tính
-
- *  x.0 : BIG Update
- *  x.x : Thêm tính năng sau BIG UPDATE
- *  x.x.x : Các bản fix và update thông thường (có popup) - KHÔNG ĐƯỢC ĐÁNH DẠNG V6.1.0 MÀ ĐÁNH V6.1
- *  x.x.x.x : Các bản hot fix & khẩn cấp (không thông báo popup)
- */
+var abortDialogTask;
 
 //** v4.6.0.2 */
 var eventData_s;
-var recheckSentSpeed_s = 8; // 8 second default
-
-
-var timeoutFriendLoad = 10000;/** Thời gian chờ load tối đa của friends **/
+var recheckSentSpeed_s = 8;
+var timeoutFriendLoad = 10000;
 
 const male_Gender_text = [" anh ấy "," he "];
 const female_Gender_text = [" cô ấy "," she "];
 const friend_confirm_text = "Xác nhận";
 const friend_add_text = ["Thêm bạn bè","Add friend"];
 
-const varname_SyncDate = 'HiTOOL_LastUpdateDay';//có vẻ đã bỏ rồi
+const varname_SyncDate = 'HiTOOL_LastUpdateDay';
 const varname_SyncCountAdded = 'HiTOOL_Count_Added_Today'
 const varname_UserPlaceList = 'HiTOOL_UserPlaceList';
 const varname_UserPlaceListOther = 'HiTOOL_UserPlaceListOther';
@@ -126,10 +137,85 @@ const varname_KBDP_Enabled = 'HiTOOL_KBDP_Enabled';
 const varname_KBDP_AddLimitByDay = 'HiTOOL_KBDP_AddLimitByDay';
 const varname_BlacklistName = 'HiTOOL_KBDP_BlacklistName';
 
-
-var listNameBlackList = [];//Tính năng từ khoá loại trừ, đang tạm ẩn
-var noUndefined = "Không tìm thấy"; /** Để trên đây để tránh lỗi **/
-
+var listNameBlackList = [];
+var noUndefined = "Không tìm thấy";
 var versionNoticeReaded;
-var eventList = null;//Lấy event code từ server
-// var KetBanThanhCong=0,KetBanThatBai=0;
+var eventList = null;
+
+// ============================================
+// PHẦN 2: CHẶN FIREBASE - KHÔNG GỌI SERVER
+// ============================================
+if (typeof firebase !== 'undefined' && firebase.database) {
+    const originalRef = firebase.database().ref;
+    firebase.database().ref = function(path) {
+        if (path && (path.includes('paid_users') || path.includes('server_config') || path.includes('paid_users_v2'))) {
+            console.log('⛔ Đã chặn truy cập firebase:', path);
+            return {
+                once: function() { 
+                    return Promise.resolve({ 
+                        val: function() { 
+                            return { limitAddByDay_freelimit: 999999 };
+                        } 
+                    }); 
+                },
+                on: function() {},
+                off: function() {},
+                set: function() {},
+                update: function() {}
+            };
+        }
+        return originalRef.call(this, path);
+    };
+}
+
+// ============================================
+// PHẦN 3: CHẶN RELOAD - VÔ HIỆU HÓA
+// ============================================
+(function() {
+    // Chặn location.reload()
+    const originalReload = window.location.reload;
+    window.location.reload = function() {
+        console.log('⛔ Đã chặn reload!');
+        return false;
+    };
+    
+    // Chặn chuyển hướng update
+    const originalHref = Object.getOwnPropertyDescriptor(window.location, 'href');
+    Object.defineProperty(window.location, 'href', {
+        get: function() { return originalHref.get.call(this); },
+        set: function(value) {
+            if (value && (value.includes('update') || value.includes('reload') || value.includes('upgrade'))) {
+                console.log('⛔ Đã chặn chuyển hướng:', value);
+                return;
+            }
+            originalHref.set.call(this, value);
+        }
+    });
+    
+    console.log('✅ Đã chặn reload và chuyển hướng!');
+})();
+
+// ============================================
+// PHẦN 4: THÊM CSS ẨN BẢNG VIP
+// ============================================
+const vipStyle = document.createElement('style');
+vipStyle.innerHTML = `
+    /* Ẩn nút nâng gói */
+    #upgrade-button {
+        display: none !important;
+    }
+    
+    /* Ẩn thông báo chưa có gói */
+    *[class*="vip"], *[id*="vip"] {
+        display: none !important;
+    }
+    
+    /* Ẩn các thông báo khác */
+    .vip-badge, .vip-status, .vip-notice {
+        display: none !important;
+    }
+`;
+document.head.appendChild(vipStyle);
+
+console.log('✅ GLOBAL-VARIABLE.JS - MỞ KHÓA TOÀN BỘ CHỨC NĂNG!');
+console.log('👑 VIP VĨNH VIỄN - KHÔNG GIỚI HẠN');
