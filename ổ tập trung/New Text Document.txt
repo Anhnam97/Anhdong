@@ -1,1 +1,202 @@
+// ============================================
+// CHỈ SỬA HÀM loadInteractionFriends()
+// GIỮ NGUYÊN MỌI THỨ KHÁC
+// ============================================
 
+async loadInteractionFriends() {
+    this.loadingInteraction = 0;
+    let endCursor = undefined;
+    let posts = [];
+    
+    // Tải 100 bài viết - THÊM TRY CATCH
+    try {
+        do {
+            const result = await getPosts(endCursor);
+            if (!result) {
+                this.loadingInteraction = null;
+                return;
+            }
+            posts = posts.concat(result.posts);
+            endCursor = result.endCursor;
+            this.loadingInteraction = Math.round(40 * posts.length / 100);
+            this.loadingInteraction = this.loadingInteraction > 40 ? 40 : this.loadingInteraction;
+        } while (endCursor != null && posts.length < 100);
+    } catch (error) {
+        console.error('Lỗi tải bài viết:', error);
+        this.loadingInteraction = null;
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi tải bài viết',
+            text: 'Không thể tải bài viết. Vui lòng thử lại.'
+        });
+        return;
+    }
+
+    // Lấy reactors - THÊM TRY CATCH
+    endCursor = undefined;
+    let reactors = [];
+    try {
+        for (let i = 0; i < posts.length; i++) {
+            const post = posts[i];
+            do {
+                const result = await getReactors(post.id, endCursor);
+                if (!result) break;
+                reactors = reactors.concat(result.reactors);
+                endCursor = result.endCursor;
+                await delay(500);
+            } while (endCursor != null);
+            this.loadingInteraction = 40 + Math.round(30 * (i + 1) / posts.length);
+            this.loadingInteraction = this.loadingInteraction > 70 ? 70 : this.loadingInteraction;
+        }
+    } catch (error) {
+        console.error('Lỗi tải reactors:', error);
+        // Không throw error, tiếp tục với dữ liệu có được
+    }
+
+    // Lấy commenters - THÊM TRY CATCH
+    endCursor = undefined;
+    let commenters = [];
+    try {
+        for (let i = 0; i < posts.length; i++) {
+            const post = posts[i];
+            do {
+                const result = await getCommenters(post.id, endCursor);
+                if (!result) break;
+                commenters = commenters.concat(result.commenters);
+                endCursor = result.endCursor;
+                await delay(500);
+            } while (endCursor != null);
+            this.loadingInteraction = 70 + Math.round(30 * (i + 1) / posts.length);
+            this.loadingInteraction = this.loadingInteraction > 99 ? 99 : this.loadingInteraction;
+        }
+    } catch (error) {
+        console.error('Lỗi tải commenters:', error);
+        // Không throw error, tiếp tục với dữ liệu có được
+    }
+
+    // Lấy messages - THÊM TRY CATCH
+    let messages = [];
+    try {
+        const result = await getMessages();
+        if (result) {
+            messages = result;
+        }
+    } catch (error) {
+        console.error('Lỗi tải messages:', error);
+        // Không throw error, tiếp tục với messages rỗng
+    }
+
+    // Tạo map và gán dữ liệu - KHÔNG THAY ĐỔI
+    const interactionMap = {};
+    reactors.forEach(reactor => {
+        if (!interactionMap[reactor.id]) {
+            interactionMap[reactor.id] = { reactions: 0, comments: 0, messages: 0 };
+        }
+        interactionMap[reactor.id].reactions++;
+    });
+    commenters.forEach(commenter => {
+        if (!interactionMap[commenter.id]) {
+            interactionMap[commenter.id] = { reactions: 0, comments: 0, messages: 0 };
+        }
+        interactionMap[commenter.id].comments++;
+    });
+    messages.forEach(msg => {
+        if (!interactionMap[msg.id]) {
+            interactionMap[msg.id] = { reactions: 0, comments: 0, messages: 0 };
+        }
+        interactionMap[msg.id].messages = msg.count || 0;
+    });
+
+    // Gán dữ liệu - KHÔNG THAY ĐỔI
+    this.friends.forEach(friend => {
+        if (interactionMap[friend.id]) {
+            friend.interaction = interactionMap[friend.id];
+        } else {
+            friend.interaction = { reactions: 0, comments: 0, messages: 0 };
+        }
+    });
+
+    saveFriends(this.friends);
+    this.loadingInteraction = 100;
+}
+
+// ============================================
+// SỬA HÀM submitFilterFriends() - CHỈ PHẦN LỌC TƯƠNG TÁC
+// ============================================
+
+submitFilterFriends() {
+    this.filterFriends = this.friends.filter(friend => {
+        // ====== CHỈ SỬA PHẦN NÀY ======
+        if (this.filterOption.interaction) {
+            if (!friend.active) return false;
+            
+            // SỬA: Xử lý trường hợp interaction null/undefined
+            const totalInteraction = (friend.interaction?.reactions || 0) + 
+                                    (friend.interaction?.comments || 0) + 
+                                    (friend.interaction?.messages || 0);
+            
+            if (this.filterOption.interactionValue === 'NOT_INTERACTION') {
+                // SỬA: So sánh tổng tương tác = 0
+                if (totalInteraction !== 0) return false;
+            } else if (this.filterOption.interactionValue === 'REACTION') {
+                // SỬA: Xử lý null
+                if ((friend.interaction?.reactions || 0) >= this.filterOption.reactionValue) return false;
+            } else if (this.filterOption.interactionValue === 'COMMENT') {
+                // SỬA: Xử lý null
+                if ((friend.interaction?.comments || 0) >= this.filterOption.commentValue) return false;
+            } else if (this.filterOption.interactionValue === 'MESSAGE') {
+                // SỬA: Xử lý null
+                if ((friend.interaction?.messages || 0) >= this.filterOption.messageValue) return false;
+            } else if (this.filterOption.interactionValue === 'INTERACTION_NUMBER') {
+                // SỬA: So sánh tổng tương tác
+                if (totalInteraction >= this.filterOption.interactionNumberValue) return false;
+            }
+        }
+        // ====== KẾT THÚC PHẦN SỬA ======
+
+        // GIỮ NGUYÊN CÁC BỘ LỌC KHÁC
+        if (this.filterOption.gender) {
+            if (!friend.gender || !this.filterOption.genderValue.includes(friend.gender)) {
+                return false;
+            }
+        }
+        if (this.filterOption.accountLocked) {
+            if (friend.active !== false) return false;
+        }
+        if (this.filterOption.strangeName) {
+            if (VIETNAMESE_REGEX.test(friend.name.normalize('NFC'))) return false;
+        }
+        if (this.filterOption.noAvatar) {
+            if (friend.hasAvatar !== false) return false;
+        }
+        if (this.filterOption.mutualFriends) {
+            if (!friend.mutualFriendsCount || 
+                friend.mutualFriendsCount >= this.filterOption.mutualFriendsValue) {
+                return false;
+            }
+        }
+        if (this.filterOption.noVietnamese) {
+            if (!friend.locale || 
+                friend.locale === 'vi_VN' || 
+                friend.location === 'VN' || 
+                friend.hometown === 'VN') {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    this.filterFriends = this.filterFriends.map(friend => ({
+        ...friend,
+        selected: false
+    }));
+    this.isNotSubmit = false;
+}
+
+// ============================================
+// HÀM DELAY (THÊM MỚI - CHỈ ĐỂ CHỜ)
+// ============================================
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
