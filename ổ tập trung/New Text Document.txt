@@ -1,1 +1,327 @@
-(function(e){function t(t){for(var a,o,i=t[0],c=t[1],l=t[2],d=0,f=[];d<i.length;d++)o=i[d],Object.prototype.hasOwnProperty.call(r,o)&&r[o]&&f.push(r[o][0]),r[o]=0;for(a in c)Object.prototype.hasOwnProperty.call(c,a)&&(e[a]=c[a]);u&&u(t);while(f.length)f.shift()();return s.push.apply(s,l||[]),n()}function n(){for(var e,t=0;t<s.length;t++){for(var n=s[t],a=!0,o=1;o<n.length;o++){var c=n[o];0!==r[c]&&(a=!1)}a&&(s.splice(t--,1),e=i(i.s=n[0]))}return e}var a={},r={app:0},s=[];function o(e){return i.p+"js/"+({}[e]||e)+".js"}function i(t){if(a[t])return a[t].exports;var n=a[t]={i:t,l:!1,exports:{}};return e[t].call(n.exports,n,n.exports,i),n.l=!0,n.exports}i.e=function(e){var t=[],n=r[e];if(0!==n)if(n)t.push(n[2]);else{var a=new Promise((function(t,a){n=r[e]=[t,a]}));t.push(n[2]=a);var s,c=document.createElement("script");c.charset="utf-8",c.timeout=120,i.nc&&c.setAttribute("nonce",i.nc),c.src=o(e);var l=new Error;s=function(t){c.onerror=c.onload=null,clearTimeout(d);var n=r[e];if(0!==n){if(n){var a=t&&("load"===t.type?"missing":t.type),s=t&&t.target&&t.target.src;l.message="Loading chunk "+e+" failed.\n("+a+": "+s+")",l.name="ChunkLoadError",l.type=a,l.request=s,n[1](l)}r[e]=void 0}};var d=setTimeout((function(){s({type:"timeout",target:c})}),12e4);c.onerror=c.onload=s,document.head.appendChild(c)}return Promise.all(t)},i.m=e,i.c=a,i.d=function(e,t,n){i.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:n})},i.r=function(e){"undefined"!==typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},i.t=function(e,t){if(1&t&&(e=i(e)),8&t)return e;if(4&t&&"object"===typeof e&&e&&e.__esModule)return e;var n=Object.create(null);if(i.r(n),Object.defineProperty(n,"default",{enumerable:!0,value:e}),2&t&&"string"!=typeof e)for(var a in e)i.d(n,a,function(t){return e[t]}.bind(null,a));return n},i.n=function(e){var t=e&&e.__esModule?function(){return e["default"]}:function(){return e};return i.d(t,"a",t),t},i.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},i.p="/",i.oe=function(e){throw console.error(e),e};var c=window["webpackJsonp"]=window["webpackJsonp"]||[],l=c.push.bind(c);c.push=t,c=c.slice();for(var d=0;d<c.length;d++)t(c[d]);var u=l;s.push([0,"chunk-vendors"]),n()})({0:function(e,t,n){e.exports=n("cd49")},"027b":function(e,t,n){"use strict";n.d(t,"a",(function(){return r}));var a=n("8fe2");const r=e=>a["i"]([a["d"],a["h"],e])},"0613":function(e,t,n){"use strict";n.d(t,"e",(function(){return s})),n.d(t,"c",(function(){return o})),n.d(t,"a",(function(){return i})),n.d(t,"b",(function(){return c}));var a=n("5502"),r=n("0e44");const s=Object(a["a"])({state:{profile:null,friends:[],friendsRemoved:[]},mutations:{setProfile(e,t){e.profile=t},setFriends(e,t){e.friends=t},setFriendsRemoved(e,t){e.friendsRemoved=t}},actions:{},modules:{},plugins:[Object(r["a"])({paths:["profile","friends","friendsRemoved"]})]});t["d"]=s;const o=e=>{s.commit("setProfile",e)},i=e=>{s.commit("setFriends",e)},c=e=>{s.commit("setFriendsRemoved",e)}},"08ba":function(e,t,n){"use strict";n.d(t,"r",(function(){return s})),n.d(t,"a",(function(){return o})),n.d(t,"o",(function(){return l})),n.d(t,"p",(function(){return d})),n.d(t,"s",(function(){return u})),n.d(t,"n",(function(){return f})),n.d(t,"m",(function(){return P})),n.d(t,"b",(function(){return B})),n.d(t,"d",(function(){return J})),n.d(t,"l",(function(){return D})),n.d(t,"k",(function(){return M})),n.d(t,"j",(function(){return K})),n.d(t,"i",(function(){return A})),n.d(t,"f",(function(){return U})),n.d(t,"h",(function(){return q})),n.d(t,"e",(function(){return $})),n.d(t,"g",(function(){return H})),n.d(t,"q",(function(){return G})),n.d(t,"c",(function(){return Q}));var a=n("c1df"),r=n.n(a);const s=e=>new Promise(t=>setTimeout(t,e)),o=e=>r()(e).format("YYYY-MM-DD HH:mm"),i=(e,t)=>{const n=e.match(t);return n?n.pop():null},c=e=>decodeURIComponent(JSON.parse(`"${e.replace(/\\\\/g,"\\")}"`)),l=(e,t)=>{const n=e.indexOf(t);return n>-1&&(e.splice(n,1),!0)},d=(e,t,n)=>{const a=e.findIndex(e=>n in e&&n in t&&e[n]===t[n]);return a>-1&&(e.splice(a,1),!0)},u={fanpage:"https://www.facebook.com/fanpage.vn.service",fbvn:"https://fbvn.org/",getHtml(e,t){return`<a href="${t}" target="_blank">${e}</a>`},getFacebookHtml(e){return`<a href="https://www.facebook.com/" target="_blank">${e}</a>`}},f={count:0,push(){this.count=this.count+1,0!==this.count&&this.fadeIn()},pop(){this.count=this.count-1,0===this.count&&this.fadeOut()},fadeIn(){},fadeOut(){}};var g=n("4026"),m=n("bc3a"),b=n.n(m);const p=b.a.create({validateStatus:e=>e<500});var h=p,j=n("a336"),_=n("4837"),v=n("8fe2");const O=v["g"]({name:v["f"],message:v["f"],response:v["g"]({data:v["j"]})}),w=e=>e,k=(e,t)=>Object(_["d"])(t.decode(e),Object(j["a"])(t=>{throw console.warn("Data of decode error",e),w({name:"DecodeException",message:t.map(e=>e.context.map(({key:e})=>e).join(".")).join("\n"),response:{data:e}})},e=>e)),y=e=>Object(_["d"])(O.decode(e),Object(j["a"])(()=>!1,()=>!0)),x=v["g"]({...O.props,response:v["g"]({data:v["g"]({errors:v["a"](v["g"]({message:v["c"]("Rate limit exceeded")}))})})}),T=e=>Object(_["d"])(x.decode(e),Object(j["a"])(()=>!1,()=>!0)),C=v["g"]({...O.props,response:v["g"]({data:v["g"]({error:v["g"]({code:v["c"](368)})})})}),N=e=>Object(_["d"])(C.decode(e),Object(j["a"])(()=>!1,()=>!0)),L=v["g"]({errors:v["a"](v["g"]({message:v["c"]("A server error missing_required_variable_value occured. Check server logs for details.")}))}),E=e=>Object(_["d"])(L.decode(e),Object(j["a"])(()=>!1,()=>!0)),P=async()=>{try{f.fadeIn();const[e,t]=await Promise.all([h.get("https://www.facebook.com/",{headers:{accept:"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"}}),F()]),n=e.data,a={id:i(n,/"USER_ID":"(.*?)"/),name:i(n,/"NAME":"(.*?)"/),dtsg:i(n,/"DTSGInitialData",\[\],\{"token":"(.*?)"/),accessToken:t,accessTokenVIP:null,profilePicture:i(n,/"profilePicture":\{"uri":"(.*?)"/),updatedAt:(new Date).toISOString()};a.name=a.name?c(a.name):a.name,a.profilePicture=a.profilePicture?a.profilePicture.replace(/\\/g,""):a.profilePicture;const r=k(a,g["a"].codec);return f.fadeOut(),r}catch(e){f.fadeOut(),console.warn(e)}};async function F(){const e=await h.get("https://adsmanager.facebook.com/adsmanager/manage/campaigns");let t=i(e.data,/window.location.replace\(([^(]+)\)/);if(t){t=JSON.parse(t);const e=await h.get(t),n=i(e.data,/window\.__accessToken="([^"]+)"/);if(n)return n}return null}const B=async()=>{var e;const t=await h.get("https://www.facebook.com/dialog/oauth",{params:{response_type:"token",client_id:"124024574287414",redirect_uri:"fb124024574287414://authorize/",sso_key:"com",display:"popup",scope:"ads_management,ads_read,attribution_read,business_management,catalog_management,email,gaming_user_locale,groups_access_member_info,instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,leads_retrieval,pages_manage_ads,pages_manage_cta,pages_manage_instant_articles,pages_manage_engagement,pages_manage_metadata,pages_manage_posts,pages_messaging,pages_read_engagement,pages_read_user_content,pages_show_list,private_computation_access,public_profile,publish_to_groups,publish_video,read_insights,user_age_range,user_birthday,user_friends,user_gender,user_hometown,user_likes,user_link,user_location,user_messenger_contact,user_photos,user_posts,user_videos,whatsapp_business_management,whatsapp_business_messaging,manage_pages,publish_pages,user_about_me,user_actions.books,user_actions.fitness,user_actions.music,user_actions.news,user_actions.video,user_activities,user_education_history,user_events,user_games_activity,user_groups,user_interests,user_managed_groups,user_relationship_details,user_relationships,user_religion_politics,user_status,user_tagged_places,user_website,user_work_history,manage_notifications,publish_actions,read_friendlists,read_page_mailboxes,read_stream,rsvp_event,read_mailbox"}}),n=(new DOMParser).parseFromString(t.data,"text/html"),a=null===(e=n.getElementById("platformDialogForm"))||void 0===e?void 0:e.getElementsByTagName("input");if(a){const e=new FormData;[...a].forEach(t=>{e.append(t.name,t.value)});const t=await h.post("https://www.facebook.com/v1.0/dialog/oauth/skip/submit/",e,{headers:{"Content-Type":"multipart/form-data"}});return i(t.data,/access_token=([^&]+)&/)}};n("d9e2"),n("b7ef");var S=n("027b"),I=n("727b"),z=n("0613"),V=n("4328"),R=n.n(V);v["g"]({friends:v["a"](v["g"]({id:v["f"],url:Object(S["a"])(v["f"]),name:v["f"],image:v["f"],gender:Object(S["a"])(v["i"]([v["c"]("MALE"),v["c"]("FEMALE"),v["c"]("NEUTER"),v["c"]("UNKNOWN")])),hasSubTitle:v["b"],mutualFriendsCount:Object(S["a"])(v["e"])})),endCursor:v["i"]([v["f"],v["d"]])});const J=async e=>{try{var t,n,a;const r=await h.post("https://www.facebook.com/api/graphql/?getFriends",R.a.stringify({av:null===(t=z["e"].state.profile)||void 0===t?void 0:t.id,doc_id:"4000236333353471",dpr:"1",fb_api_caller_class:"RelayModern",fb_api_req_friendly_name:"ProfileCometAppCollectionListRendererPaginationQuery",fb_dtsg:null===(n=z["e"].state.profile)||void 0===n?void 0:n.dtsg,server_timestamps:"true",variables:JSON.stringify({count:8,cursor:e||null,scale:1,search:null,id:btoa(`app_collection:${null===(a=z["e"].state.profile)||void 0===a?void 0:a.id}:2356318349:2`)})}),{headers:{"Content-Type":"application/x-www-form-urlencoded"}});"string"===typeof r.data&&(r.data=JSON.parse(r.data.split("\n")[0]));const s=k(r.data,v["g"]({data:v["g"]({node:v["g"]({pageItems:v["g"]({edges:v["a"](v["g"]({node:v["g"]({actions_renderer:v["g"]({action:v["g"]({client_handler:v["g"]({profile_action:v["g"]({restrictable_profile_owner:v["g"]({gender:Object(S["a"])(v["i"]([v["c"]("MALE"),v["c"]("FEMALE"),v["c"]("NEUTER"),v["c"]("UNKNOWN")]))})})})})}),image:v["g"]({uri:v["f"]}),node:v["g"]({id:v["f"],url:Object(S["a"])(v["f"])}),title:v["g"]({text:v["f"]}),subtitle_text:Object(S["a"])(v["g"]({aggregated_ranges:v["a"](v["g"]({count:v["e"]}))}))})})),page_info:v["g"]({end_cursor:Object(S["a"])(v["f"]),has_next_page:v["b"]})})})})})).data.node.pageItems;return{friends:s.edges.map(e=>{var t,n;return{id:e.node.node.id,url:e.node.node.url,name:e.node.title.text,image:e.node.image.uri,gender:e.node.actions_renderer.action.client_handler.profile_action.restrictable_profile_owner.gender,hasSubTitle:null!=e.node.subtitle_text,mutualFriendsCount:e.node.subtitle_text?null!==(t=null===(n=e.node.subtitle_text.aggregated_ranges[0])||void 0===n?void 0:n.count)&&void 0!==t?t:0:void 0}}),endCursor:s.page_info.has_next_page&&s.page_info.end_cursor?s.page_info.end_cursor:null}}catch(r){return console.warn(r),r instanceof Error&&"Network Error"===r.message?{friends:[],endCursor:e||""}:y(r)&&E(r.response.data)?(await s(3e3),{friends:[],endCursor:e||""}):T(r)||N(r)?(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:"Bạn đang bị Facebook tạm thời chặn tính năng này. <br>Vui lòng thử lại sau.",confirmButtonText:"OK"}),null):(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:`Không thể tải danh sách bạn bè của bạn. <br>Vui lòng thử lại hoặc liên hệ ${u.getHtml("admin",u.fanpage)} để được hỗ trợ.`,confirmButtonText:"Tải lại"}),null)}};n("13d5");v["g"]({posts:v["a"](v["g"]({id:v["f"]})),endCursor:v["i"]([v["f"],v["d"]])});const D=async e=>{try{var t,n,a,r,o;const c=await h.post("https://www.facebook.com/api/graphql/?getPosts",R.a.stringify({av:null===(t=z["e"].state.profile)||void 0===t?void 0:t.id,doc_id:"7254590087911204",dpr:"1",fb_api_caller_class:"RelayModern",fb_api_req_friendly_name:"ProfileCometTimelineFeedRefetchQuery",fb_dtsg:null===(n=z["e"].state.profile)||void 0===n?void 0:n.dtsg,server_timestamps:"true",variables:JSON.stringify({afterTime:null,beforeTime:null,count:3,cursor:e||null,feedLocation:"TIMELINE",feedbackSource:0,focusCommentID:null,memorializedSplitTimeFilter:null,omitPinnedPost:!0,postedBy:{group:"OWNER"},privacy:{exclusivity:"INCLUSIVE",filter:"ALL"},privacySelectorRenderLocation:"COMET_STREAM",renderLocation:"timeline",scale:1,stream_count:1,taggedInOnly:!1,useDefaultActor:!1,id:null===(a=z["e"].state.profile)||void 0===a?void 0:a.id})}),{headers:{"Content-Type":"application/x-www-form-urlencoded"}});if(E(c.data))throw await s(3e3),new Error("Network Error");const l="string"===typeof c.data?c.data:JSON.stringify(c.data),d=null===(r=l.match(/"feedback_id":"([^"]+)"/g))||void 0===r?void 0:r.map(e=>i(e,/"feedback_id":"([^"]+)"/)).filter(e=>null!=e&&!/^[0-9]+$/.test(e)&&!atob(e).includes("_")).reduce((e,t)=>(e[t]=null,e),{}),u=null===(o=l.match(/"page_info":({[^}]+})/))||void 0===o?void 0:o.pop();if(null==u)throw new Error("Cannot find page_info");const f=k(JSON.parse(u),v["g"]({end_cursor:Object(S["a"])(v["f"]),has_next_page:v["b"]}));return{posts:d?Object.keys(d).map(e=>({id:e})):[],endCursor:f.has_next_page&&f.end_cursor?f.end_cursor:null}}catch(c){return console.warn(c),c instanceof Error&&"Network Error"===c.message?{posts:[],endCursor:e||""}:T(c)||N(c)?(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:"Bạn đang bị Facebook tạm thời chặn tính năng này. <br>Vui lòng thử lại sau.",confirmButtonText:"OK"}),null):(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:`Không thể tải dữ liệu của bạn. <br>Vui lòng thử lại hoặc liên hệ ${u.getHtml("admin",u.fanpage)} để được hỗ trợ.`,confirmButtonText:"OK"}),null)}},M=(v["g"]({reactors:v["a"](v["g"]({id:v["f"],name:v["f"]})),endCursor:v["i"]([v["f"],v["d"]])}),async(e,t)=>{try{var n,a;const r=await h.post("https://www.facebook.com/api/graphql/?getPostReactors",R.a.stringify({av:null===(n=z["e"].state.profile)||void 0===n?void 0:n.id,doc_id:"7311826188912908",dpr:"1",fb_api_caller_class:"RelayModern",fb_api_req_friendly_name:"CometUFIReactionsDialogTabContentRefetchQuery",fb_dtsg:null===(a=z["e"].state.profile)||void 0===a?void 0:a.dtsg,server_timestamps:"true",variables:JSON.stringify({count:10,cursor:t||null,feedbackTargetID:e,reactionID:null,scale:1,id:e})}),{headers:{"Content-Type":"application/x-www-form-urlencoded"}});"string"===typeof r.data&&(r.data=JSON.parse(r.data.split("\n")[0]));const s=k(r.data,v["g"]({data:v["g"]({node:v["g"]({reactors:v["g"]({edges:v["a"](v["g"]({node:v["g"]({id:v["f"],name:v["f"]})})),page_info:v["g"]({end_cursor:Object(S["a"])(v["f"]),has_next_page:v["b"]})})})})})).data.node.reactors;return{reactors:s.edges.map(e=>({id:e.node.id,name:e.node.name})),endCursor:s.page_info.has_next_page&&s.page_info.end_cursor?s.page_info.end_cursor:null}}catch(r){return console.warn(r),r instanceof Error&&"Network Error"===r.message?{reactors:[],endCursor:t||""}:y(r)&&E(r.response.data)?(await s(3e3),{reactors:[],endCursor:t||""}):T(r)||N(r)?(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:"Bạn đang bị Facebook tạm thời chặn tính năng này. <br>Vui lòng thử lại sau.",confirmButtonText:"OK"}),null):(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:`Không thể tải dữ liệu tương tác của bạn. <br>Vui lòng thử lại hoặc liên hệ ${u.getHtml("admin",u.fanpage)} để được hỗ trợ.`,confirmButtonText:"Tiếp tục"}),null)}}),K=(v["g"]({commenters:v["a"](v["g"]({id:v["f"],name:v["f"]})),endCursor:v["i"]([v["f"],v["d"]])}),async(e,t)=>{try{var n,a;const r=await h.post("https://www.facebook.com/api/graphql/?getPostCommenters",R.a.stringify({av:null===(n=z["e"].state.profile)||void 0===n?void 0:n.id,doc_id:"7176495235805812",dpr:"1",fb_api_caller_class:"RelayModern",fb_api_req_friendly_name:"CommentsListComponentsPaginationQuery",fb_dtsg:null===(a=z["e"].state.profile)||void 0===a?void 0:a.dtsg,server_timestamps:"true",variables:JSON.stringify({commentsAfterCount:-1,commentsAfterCursor:t||null,commentsBeforeCount:null,commentsBeforeCursor:null,commentsIntentToken:"CHRONOLOGICAL_UNFILTERED_INTENT_V1",feedLocation:"PERMALINK",focusCommentID:null,scale:1,useDefaultActor:!1,id:e})}),{headers:{"Content-Type":"application/x-www-form-urlencoded"}});"string"===typeof r.data&&(r.data=JSON.parse(r.data.split("\n")[0]));const s=k(r.data,v["g"]({data:v["g"]({node:v["g"]({comment_rendering_instance_for_feed_location:v["g"]({comments:v["g"]({edges:v["a"](v["g"]({node:v["g"]({user:v["g"]({id:v["f"],name:v["f"]})})})),page_info:v["g"]({end_cursor:Object(S["a"])(v["f"]),has_next_page:v["b"]})})})})})})).data.node.comment_rendering_instance_for_feed_location.comments;return{commenters:s.edges.map(e=>({id:e.node.user.id,name:e.node.user.id})),endCursor:s.page_info.has_next_page&&s.page_info.end_cursor?s.page_info.end_cursor:null}}catch(r){return console.warn(r),r instanceof Error&&"Network Error"===r.message?{commenters:[],endCursor:t||""}:y(r)&&E(r.response.data)?(await s(3e3),{commenters:[],endCursor:t||""}):T(r)||N(r)?(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:"Bạn đang bị Facebook tạm thời chặn tính năng này. <br>Vui lòng thử lại sau.",confirmButtonText:"OK"}),null):(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:`Không thể tải dữ liệu tương tác của bạn. <br>Vui lòng thử lại hoặc liên hệ ${u.getHtml("admin",u.fanpage)} để được hỗ trợ.`,confirmButtonText:"Tiếp tục"}),null)}}),A=(v["a"](v["g"]({id:v["f"],count:v["e"]})),async()=>{try{var e;const t=await h.post("https://www.facebook.com/api/graphql/?getMessages",R.a.stringify({fb_dtsg:null===(e=z["e"].state.profile)||void 0===e?void 0:e.dtsg,q:"viewer(){message_threads{count,nodes{customization_info{emoji,outgoing_bubble_color,participant_customizations{participant_id,nickname}},all_participants{nodes{messaging_actor{name,id,profile_picture}}},thread_type,name,messages_count,image,id}}}"}),{headers:{"Content-Type":"application/x-www-form-urlencoded"}});"string"===typeof t.data&&(t.data=JSON.parse(t.data.split("\n")[0]));const n=k(t.data,v["g"]({viewer:v["g"]({message_threads:v["g"]({nodes:v["a"](v["g"]({all_participants:v["g"]({nodes:v["a"](v["g"]({messaging_actor:v["g"]({id:v["f"],name:v["f"]})}))}),messages_count:v["e"],thread_type:v["f"]}))})})})).viewer.message_threads.nodes;return n.filter(e=>"ONE_TO_ONE"===e.thread_type).map(e=>{const t=e.all_participants.nodes.find(e=>{var t;return e.messaging_actor.id!==(null===(t=z["e"].state.profile)||void 0===t?void 0:t.id)});return t?{id:t.messaging_actor.id,count:e.messages_count}:null}).filter(e=>null!=e)}catch(t){return console.warn(t),t instanceof Error&&"Network Error"===t.message?await A():y(t)&&E(t.response.data)?(await s(3e3),await A()):T(t)||N(t)?(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:"Bạn đang bị Facebook tạm thời chặn tính năng này. <br>Vui lòng thử lại sau.",confirmButtonText:"OK"}),null):(await I["a"].fire({icon:"warning",title:"Lỗi không mong muốn",html:"Không thể tải dữ liệu tương tác <b>Tin nhắn</b> của bạn!",confirmButtonText:"Tiếp tục"}),[])}}),U=e=>{const t={};for(const n of e.commenters)t[n]||(t[n]={comments:0,reactions:0}),t[n].comments++;for(const n of e.reactors)t[n]||(t[n]={comments:0,reactions:0}),t[n].reactions++;return t},q=(v["g"]({friends:v["a"](v["g"]({id:v["f"],location:Object(S["a"])(v["f"])})),next:v["i"]([v["f"],v["d"]])}),async(e,t)=>{try{const n=await h.get("https://graph.facebook.com/me",{params:{access_token:e,fields:`friends${t?`.after(${t})`:""}{id,location{location{country_code}}}`}});"string"===typeof n.data&&(n.data=JSON.parse(n.data.split("\n")[0]));const a=k(n.data,v["g"]({friends:v["g"]({data:v["a"](v["g"]({id:v["f"],location:Object(S["a"])(v["g"]({location:Object(S["a"])(v["g"]({country_code:v["f"]}))}))})),paging:Object(S["a"])(v["g"]({cursors:Object(S["a"])(v["g"]({after:Object(S["a"])(v["f"])}))}))})}));return{friends:a.friends.data.map(e=>{var t;return{id:e.id,location:null===(t=e.location)||void 0===t||null===(t=t.location)||void 0===t?void 0:t.country_code}}),next:null}}catch(n){return console.warn(n),n instanceof Error&&"Network Error"===n.message?{friends:[],next:t||""}:T(n)||N(n)?(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:"Bạn đang bị Facebook tạm thời chặn tính năng này. <br>Vui lòng thử lại sau.",confirmButtonText:"OK"}),null):(I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:`Không thể tải dữ liệu về bạn bè của bạn. <br>Vui lòng thử lại hoặc liên hệ ${u.getHtml("admin",u.fanpage)} để được hỗ trợ.`,confirmButtonText:"OK"}),null)}}),$=(v["g"]({friends:v["a"](v["g"]({id:v["f"],hometown:Object(S["a"])(v["f"])})),next:v["i"]([v["f"],v["d"]])}),async(e,t)=>{try{const n=await h.get("https://graph.facebook.com/me",{params:{access_token:e,fields:`friends${t?`.after(${t})`:""}{id,hometown{location{country_code}}}`}});"string"===typeof n.data&&(n.data=JSON.parse(n.data.split("\n")[0]));const a=k(n.data,v["g"]({friends:v["g"]({data:v["a"](v["g"]({id:v["f"],hometown:Object(S["a"])(v["g"]({location:Object(S["a"])(v["g"]({country_code:v["f"]}))}))})),paging:Object(S["a"])(v["g"]({cursors:Object(S["a"])(v["g"]({after:Object(S["a"])(v["f"])}))}))})}));return{friends:a.friends.data.map(e=>{var t;return{id:e.id,hometown:null===(t=e.hometown)||void 0===t||null===(t=t.location)||void 0===t?void 0:t.country_code}}),next:null}}catch(n){return console.warn(n),n instanceof Error&&"Network Error"===n.message?{friends:[],next:t||""}:T(n)||N(n)?(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:"Bạn đang bị Facebook tạm thời chặn tính năng này. <br>Vui lòng thử lại sau.",confirmButtonText:"OK"}),null):(I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:`Không thể tải dữ liệu về bạn bè của bạn. <br>Vui lòng thử lại hoặc liên hệ ${u.getHtml("admin",u.fanpage)} để được hỗ trợ.`,confirmButtonText:"OK"}),null)}}),H=(v["g"]({friends:v["a"](v["g"]({id:v["f"],locale:v["f"]})),next:v["i"]([v["f"],v["d"]])}),async(e,t)=>{try{const n=await h.get("https://graph.facebook.com/me",{params:{access_token:e,fields:`friends${t?`.after(${t})`:""}{id,locale}`}});"string"===typeof n.data&&(n.data=JSON.parse(n.data.split("\n")[0]));const a=k(n.data,v["g"]({friends:v["g"]({data:v["a"](v["g"]({id:v["f"],locale:v["f"]})),paging:Object(S["a"])(v["g"]({cursors:Object(S["a"])(v["g"]({after:Object(S["a"])(v["f"])}))}))})}));return{friends:a.friends.data.map(e=>({id:e.id,locale:e.locale})),next:null}}catch(n){return console.warn(n),n instanceof Error&&"Network Error"===n.message?{friends:[],next:t||""}:T(n)||N(n)?(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:"Bạn đang bị Facebook tạm thời chặn tính năng này. <br>Vui lòng thử lại sau.",confirmButtonText:"OK"}),null):(I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:`Không thể tải dữ liệu về bạn bè của bạn. <br>Vui lòng thử lại hoặc liên hệ ${u.getHtml("admin",u.fanpage)} để được hỗ trợ.`,confirmButtonText:"OK"}),null)}}),G=async e=>{try{var t,n,a;const r=await h.post("https://www.facebook.com/api/graphql/?removeFriend",R.a.stringify({av:null===(t=z["e"].state.profile)||void 0===t?void 0:t.id,doc_id:"4281078165250156",dpr:"1",fb_api_caller_class:"RelayModern",fb_api_req_friendly_name:"FriendingCometUnfriendMutation",fb_dtsg:null===(n=z["e"].state.profile)||void 0===n?void 0:n.dtsg,server_timestamps:"true",variables:JSON.stringify({input:{source:"bd_profile_button",unfriended_user_id:e,actor_id:null===(a=z["e"].state.profile)||void 0===a?void 0:a.id,client_mutation_id:"1"},scale:1})}),{headers:{"Content-Type":"application/x-www-form-urlencoded"}});return"string"===typeof r.data&&(r.data=JSON.parse(r.data.split("\n")[0])),k(r.data,v["g"]({extensions:v["g"]({is_final:v["c"](!0)}),errors:v["h"]})),!0}catch(r){return console.warn(r),r instanceof Error&&"Network Error"===r.message?await G(e):y(r)&&E(r.response.data)?(await s(3e3),await G(e)):T(r)||N(r)?(await I["a"].fire({icon:"error",title:"Lỗi không mong muốn",html:"Bạn đang bị Facebook tạm thời chặn tính năng này. <br>Vui lòng thử lại sau.",confirmButtonText:"OK"}),null):void 0}},Q=()=>[{name:"Tăng Follow Trang Cá Nhân",url:"dich-vu/mua-follow-trang-ca-nhan-facebook/"},{name:"Tăng Like/Follow Fanpage",url:"dich-vu/mua-like-follow-fanpage-facebook/"},{name:"Tăng Like Bài viết",url:"dich-vu/mua-like-bai-viet-facebook/"},{name:"VIP Like Theo Tháng",url:"dich-vu/mua-vip-like-facebook/"},{name:"VIP Comment Theo Tháng",url:"dich-vu/mua-vip-comment-facebook/"},{name:"Tăng Thành Viên Group",url:"dich-vu/mua-thanh-vien-group-facebook/"}]},1:function(e,t){},4026:function(e,t,n){"use strict";n.d(t,"a",(function(){return a}));var a,r=n("027b"),s=n("8fe2");(function(e){e.codec=s["g"]({id:s["f"],name:s["f"],dtsg:s["f"],accessToken:s["f"],accessTokenVIP:Object(r["a"])(s["f"]),profilePicture:s["f"],updatedAt:s["f"]}),e.getProfileUrl=e=>"https://www.facebook.com/profile.php?id="+e})(a||(a={}))},4678:function(e,t,n){var a={"./af":"2bfb","./af.js":"2bfb","./ar":"8e73","./ar-dz":"a356","./ar-dz.js":"a356","./ar-kw":"423e","./ar-kw.js":"423e","./ar-ly":"1cfd","./ar-ly.js":"1cfd","./ar-ma":"0a84","./ar-ma.js":"0a84","./ar-ps":"4c98","./ar-ps.js":"4c98","./ar-sa":"8230","./ar-sa.js":"8230","./ar-tn":"6d83","./ar-tn.js":"6d83","./ar.js":"8e73","./az":"485c","./az.js":"485c","./be":"1fc1","./be.js":"1fc1","./bg":"84aa","./bg.js":"84aa","./bm":"a7fa","./bm.js":"a7fa","./bn":"9043","./bn-bd":"9686","./bn-bd.js":"9686","./bn.js":"9043","./bo":"d26a","./bo.js":"d26a","./br":"6887","./br.js":"6887","./bs":"2554","./bs.js":"2554","./ca":"d716","./ca.js":"d716","./cs":"3c0d","./cs.js":"3c0d","./cv":"03ec","./cv.js":"03ec","./cy":"9797","./cy.js":"9797","./da":"0f14","./da.js":"0f14","./de":"b469","./de-at":"b3eb","./de-at.js":"b3eb","./de-ch":"bb71","./de-ch.js":"bb71","./de.js":"b469","./dv":"598a","./dv.js":"598a","./el":"8d47","./el.js":"8d47","./en-au":"0e6b","./en-au.js":"0e6b","./en-ca":"3886","./en-ca.js":"3886","./en-gb":"39a6","./en-gb.js":"39a6","./en-ie":"e1d3","./en-ie.js":"e1d3","./en-il":"7333","./en-il.js":"7333","./en-in":"ec2e","./en-in.js":"ec2e","./en-nz":"6f50","./en-nz.js":"6f50","./en-sg":"b7e9","./en-sg.js":"b7e9","./eo":"65db","./eo.js":"65db","./es":"898b","./es-do":"0a3c","./es-do.js":"0a3c","./es-mx":"b5b7","./es-mx.js":"b5b7","./es-us":"55c9","./es-us.js":"55c9","./es.js":"898b","./et":"ec18","./et.js":"ec18","./eu":"0ff2","./eu.js":"0ff2","./fa":"8df4","./fa.js":"8df4","./fi":"81e9","./fi.js":"81e9","./fil":"d69a","./fil.js":"d69a","./fo":"0721","./fo.js":"0721","./fr":"9f26","./fr-ca":"d9f8","./fr-ca.js":"d9f8","./fr-ch":"0e49","./fr-ch.js":"0e49","./fr.js":"9f26","./fy":"7118","./fy.js":"7118","./ga":"5120","./ga.js":"5120","./gd":"f6b4","./gd.js":"f6b4","./gl":"8840","./gl.js":"8840","./gom-deva":"aaf2","./gom-deva.js":"aaf2","./gom-latn":"0caa","./gom-latn.js":"0caa","./gu":"e0c5","./gu.js":"e0c5","./he":"c7aa","./he.js":"c7aa","./hi":"dc4d","./hi.js":"dc4d","./hr":"4ba9","./hr.js":"4ba9","./hu":"5b14","./hu.js":"5b14","./hy-am":"d6b6","./hy-am.js":"d6b6","./id":"5038","./id.js":"5038","./is":"0558","./is.js":"0558","./it":"6e98","./it-ch":"6f12","./it-ch.js":"6f12","./it.js":"6e98","./ja":"079e","./ja.js":"079e","./jv":"b540","./jv.js":"b540","./ka":"201b","./ka.js":"201b","./kk":"6d79","./kk.js":"6d79","./km":"e81d","./km.js":"e81d","./kn":"3e92","./kn.js":"3e92","./ko":"22f8","./ko.js":"22f8","./ku":"2421","./ku-kmr":"7558","./ku-kmr.js":"7558","./ku.js":"2421","./ky":"9609","./ky.js":"9609","./lb":"440c","./lb.js":"440c","./lo":"b29d","./lo.js":"b29d","./lt":"26f9","./lt.js":"26f9","./lv":"b97c","./lv.js":"b97c","./me":"293c","./me.js":"293c","./mi":"688b","./mi.js":"688b","./mk":"6909","./mk.js":"6909","./ml":"02fb","./ml.js":"02fb","./mn":"958b","./mn.js":"958b","./mr":"39bd","./mr.js":"39bd","./ms":"ebe4","./ms-my":"6403","./ms-my.js":"6403","./ms.js":"ebe4","./mt":"1b45","./mt.js":"1b45","./my":"8689","./my.js":"8689","./nb":"6ce3","./nb.js":"6ce3","./ne":"3a39","./ne.js":"3a39","./nl":"facd","./nl-be":"db29","./nl-be.js":"db29","./nl.js":"facd","./nn":"b84c","./nn.js":"b84c","./oc-lnc":"167b","./oc-lnc.js":"167b","./pa-in":"f3ff","./pa-in.js":"f3ff","./pl":"8d57","./pl.js":"8d57","./pt":"f260","./pt-br":"d2d4","./pt-br.js":"d2d4","./pt.js":"f260","./ro":"972c","./ro.js":"972c","./ru":"957c","./ru.js":"957c","./sd":"6784","./sd.js":"6784","./se":"ffff","./se.js":"ffff","./si":"eda5","./si.js":"eda5","./sk":"7be6","./sk.js":"7be6","./sl":"8155","./sl.js":"8155","./sq":"c8f3","./sq.js":"c8f3","./sr":"cf1e","./sr-cyrl":"13e9","./sr-cyrl.js":"13e9","./sr.js":"cf1e","./ss":"52bd","./ss.js":"52bd","./sv":"5fbd","./sv.js":"5fbd","./sw":"74dc","./sw.js":"74dc","./ta":"3de5","./ta.js":"3de5","./te":"5cbb","./te.js":"5cbb","./tet":"576c","./tet.js":"576c","./tg":"3b1b","./tg.js":"3b1b","./th":"10e8","./th.js":"10e8","./tk":"5aff","./tk.js":"5aff","./tl-ph":"0f38","./tl-ph.js":"0f38","./tlh":"cf75","./tlh.js":"cf75","./tr":"0e81","./tr.js":"0e81","./tzl":"cf51","./tzl.js":"cf51","./tzm":"c109","./tzm-latn":"b53d","./tzm-latn.js":"b53d","./tzm.js":"c109","./ug-cn":"6117","./ug-cn.js":"6117","./uk":"ada2","./uk.js":"ada2","./ur":"5294","./ur.js":"5294","./uz":"2e8c","./uz-latn":"010e","./uz-latn.js":"010e","./uz.js":"2e8c","./vi":"2921","./vi.js":"2921","./x-pseudo":"fd7e","./x-pseudo.js":"fd7e","./yo":"7f33","./yo.js":"7f33","./zh-cn":"5c3a","./zh-cn.js":"5c3a","./zh-hk":"49ab","./zh-hk.js":"49ab","./zh-mo":"3a6c","./zh-mo.js":"3a6c","./zh-tw":"90ea","./zh-tw.js":"90ea"};function r(e){var t=s(e);return n(t)}function s(e){if(!n.o(a,e)){var t=new Error("Cannot find module '"+e+"'");throw t.code="MODULE_NOT_FOUND",t}return a[e]}r.keys=function(){return Object.keys(a)},r.resolve=s,e.exports=r,r.id="4678"},"5e46":function(e,t,n){},"63fe":function(e,t,n){"use strict";n("5e46")},"727b":function(e,t,n){"use strict";n.d(t,"b",(function(){return s}));var a=n("3d20"),r=n.n(a);const s=(e,t)=>r.a.mixin({toast:!0,position:"bottom-end",showConfirmButton:!1,timer:t||3e3,timerProgressBar:!0}).fire(e);t["a"]=r.a},b4a5:function(e,t,n){"use strict";n("f469")},cd49:function(e,t,n){"use strict";n.r(t);var a=n("7a23");const r=Object(a["h"])("nav",{class:"main-header navbar navbar-expand navbar-white navbar-light"},[Object(a["h"])("ul",{class:"navbar-nav"},[Object(a["h"])("li",{class:"nav-item"},[Object(a["h"])("a",{class:"nav-link","data-widget":"pushmenu",href:"#",role:"button"},[Object(a["h"])("i",{class:"fas fa-bars"})])])])],-1),s={class:"main-sidebar sidebar-dark-primary elevation-4"},o=Object(a["h"])("img",{src:"/img/icon32.png",class:"brand-image"},null,-1),i=Object(a["h"])("span",{class:"brand-text font-weight-light"},"FBVN",-1),c={class:"sidebar"},l={class:"user-panel pt-3 pb-3 mb-3 d-flex"},d={class:"image"},u=["src"],f={class:"info"},g={class:"mt-2"},m={class:"nav nav-pills nav-sidebar flex-column","data-widget":"treeview",role:"menu","data-accordion":"false"},b={class:"nav-item"},p=Object(a["h"])("i",{class:"nav-icon fas fa-filter"},null,-1),h=Object(a["h"])("p",null,"Lọc bạn bè",-1),j={class:"nav-item item-break"},_=Object(a["h"])("i",{class:"nav-icon fas fa-list-ul"},null,-1),v=Object(a["h"])("p",null,"Lịch sử lọc bạn bè",-1),O={class:"nav-item"},w=Object(a["h"])("i",{class:"nav-icon fas fa-question-circle"},null,-1),k=Object(a["h"])("p",null,"Báo lỗi & Góp ý",-1),y={class:"nav-item item-break"},x=Object(a["h"])("i",{class:"nav-icon fas fa-donate"},null,-1),T=Object(a["h"])("p",null,"Ủng hộ tác giả",-1),C=Object(a["h"])("li",{class:"nav-header"},"Dịch vụ khác của FBVN",-1),N=["href"],L={class:"content-wrapper"},E={class:"content-header"},P={class:"container-fluid"},F={class:"row mb-2"},B={class:"col-sm-6"},S={class:"m-0"},I={class:"content"},z={class:"main-footer"},V=["href"],R={class:"float-right d-none d-sm-inline-block"},J=Object(a["h"])("b",null,"Version",-1),D={key:0,class:"spinner-loading d-flex justify-content-center align-items-center"},M=Object(a["h"])("div",{class:"spinner-border text-success h-3 w-3",role:"status"},[Object(a["h"])("span",{class:"sr-only"},"Đang tải...")],-1),K=[M];function A(e,t,n,M,A,U){const q=Object(a["z"])("router-link"),$=Object(a["z"])("router-view");return Object(a["u"])(),Object(a["g"])(a["a"],null,[r,Object(a["h"])("aside",s,[Object(a["k"])(q,{to:{name:"Profile"},class:"brand-link"},{default:Object(a["J"])(()=>[o,i]),_:1}),Object(a["h"])("div",c,[Object(a["h"])("div",l,[Object(a["h"])("div",d,[Object(a["h"])("img",{src:e.getAvatarUrl(),class:"img-circle"},null,8,u)]),Object(a["h"])("div",f,[Object(a["k"])(q,{to:{name:"Profile"},class:"d-block"},{default:Object(a["J"])(()=>[Object(a["j"])(Object(a["C"])(e.getFullName()),1)]),_:1})])]),Object(a["h"])("nav",g,[Object(a["h"])("ul",m,[Object(a["h"])("li",b,[Object(a["k"])(q,{to:{name:"FriendsFilter"},class:"nav-link","active-class":"active"},{default:Object(a["J"])(()=>[p,h]),_:1})]),Object(a["h"])("li",j,[Object(a["k"])(q,{to:{name:"FriendsRemoved"},class:"nav-link","active-class":"active"},{default:Object(a["J"])(()=>[_,v]),_:1})]),Object(a["h"])("li",O,[Object(a["k"])(q,{to:{name:"Support"},class:"nav-link","active-class":"active"},{default:Object(a["J"])(()=>[w,k]),_:1})]),Object(a["h"])("li",y,[Object(a["k"])(q,{to:{name:"Donate"},class:"nav-link","active-class":"active"},{default:Object(a["J"])(()=>[x,T]),_:1})]),e.isLoadedProfile?(Object(a["u"])(),Object(a["g"])(a["a"],{key:0},[C,(Object(a["u"])(!0),Object(a["g"])(a["a"],null,Object(a["y"])(e.services,t=>(Object(a["u"])(),Object(a["g"])("li",{class:"nav-item",key:t.url},[Object(a["h"])("a",{href:e.fbvnUrl+t.url,class:"nav-link fs-80",target:"_blank"},[Object(a["h"])("p",null,"★ "+Object(a["C"])(t.name),1)],8,N)]))),128))],64)):Object(a["f"])("",!0)])])])]),Object(a["h"])("div",L,[Object(a["h"])("div",E,[Object(a["h"])("div",P,[Object(a["h"])("div",F,[Object(a["h"])("div",B,[Object(a["h"])("h1",S,Object(a["C"])(e.$route.meta.title),1)])])])]),Object(a["h"])("section",I,[e.isLoadedProfile?(Object(a["u"])(),Object(a["e"])($,{key:0})):Object(a["f"])("",!0)])]),Object(a["h"])("footer",z,[Object(a["h"])("strong",null,[Object(a["j"])("Copyright © 2021 - 2024 "),Object(a["h"])("a",{href:e.fbvnUrl,target:"_blank"},"FBVN",8,V)]),Object(a["h"])("div",R,[J,Object(a["j"])(" "+Object(a["C"])(e.getVersion()),1)])]),Object(a["k"])(a["b"],{name:"fade"},{default:Object(a["J"])(()=>[e.isLoading?(Object(a["u"])(),Object(a["g"])("div",D,K)):Object(a["f"])("",!0)]),_:1})],64)}var U=n("727b"),q=n("08ba"),$=n("0613"),H=Object(a["l"])({data(){return{fbvnUrl:q["s"].fbvn,isLoading:!1,isLoadedProfile:!1,services:Object(q["c"])()}},async created(){q["n"].fadeIn=()=>{this.isLoading=!0},q["n"].fadeOut=()=>{this.isLoading=!1};const e=await Object(q["m"])();if(!e){const e=q["s"].getHtml("tài khoản Facebook của bạn","https://www.facebook.com/");return await U["a"].fire({icon:"error",title:"Lỗi kết nối",html:`Vui lòng kiểm tra ${e} và sau đó nhấn thử lại.`,confirmButtonText:"Thử lại"}),window.location.reload()}$["e"].state.profile&&$["e"].state.profile.id!==e.id&&Object($["a"])([]),Object($["c"])(e),this.isLoadedProfile=!0},methods:{getAvatarUrl(){return this.isLoadedProfile&&$["e"].state.profile?$["e"].state.profile.profilePicture:void 0},getFullName(){return this.isLoadedProfile&&$["e"].state.profile?$["e"].state.profile.name:void 0},getVersion(){return"2.5.2"}}}),G=(n("b4a5"),n("6b0d")),Q=n.n(G);const Y=Q()(H,[["render",A]]);var W=Y,X=n("6605");const Z={class:"container-fluid"},ee={class:"row"},te={class:"col-md-8"},ne={class:"card"},ae={class:"card-body"},re={class:"text-center"},se=["src"],oe={class:"profile-username"},ie=["href"],ce=Object(a["h"])("hr",null,null,-1),le=Object(a["h"])("hr",null,null,-1),de=Object(a["h"])("div",{class:"h6 font-weight-bold"},"ID",-1),ue=Object(a["h"])("hr",null,null,-1),fe=Object(a["h"])("hr",null,null,-1),ge=Object(a["h"])("div",{class:"h6 font-weight-bold"},[Object(a["j"])(" Access Token "),Object(a["h"])("a",{href:"#collapseAccessToken",class:"font-weight-normal","data-toggle":"collapse"},"(ẩn/hiện)")],-1),me={class:"collapse show",id:"collapseAccessToken"};function be(e,t,n,r,s,o){return Object(a["u"])(),Object(a["g"])("div",Z,[Object(a["h"])("div",ee,[Object(a["h"])("div",te,[Object(a["h"])("div",ne,[Object(a["h"])("div",ae,[Object(a["h"])("div",re,[Object(a["h"])("img",{class:"profile-user-img img-circle",src:e.avatarUrl},null,8,se),Object(a["h"])("h3",oe,[Object(a["h"])("a",{href:e.profileUrl,target:"_blank"},Object(a["C"])(e.fullName),9,ie)])]),ce,le,de,Object(a["h"])("p",null,Object(a["C"])(e.profileId),1),ue,fe,ge,Object(a["h"])("div",me,[Object(a["h"])("p",null,Object(a["C"])(e.accessToken),1)])])])])])])}var pe=n("4026"),he=Object(a["l"])({setup(){const e=$["e"].state.profile;return{profileId:e.id,fullName:e.name,avatarUrl:e.profilePicture,profileUrl:pe["a"].getProfileUrl(e.id),accessToken:e.accessToken}}});n("63fe");const je=Q()(he,[["render",be]]);var _e=je;const ve=[{path:"/",name:"Profile",component:_e,meta:{title:"Trang cá nhân"}},{path:"/support",name:"Support",component:()=>n.e("chunk-2d0b6b26").then(n.bind(null,"1deb")),meta:{title:"Báo lỗi & Góp ý"}},{path:"/donate",name:"Donate",component:()=>n.e("chunk-2d0dd3f2").then(n.bind(null,"8125")),meta:{title:"Ủng hộ tác giả"}},{path:"/friends-filter",name:"FriendsFilter",component:()=>n.e("chunk-2d20fe4e").then(n.bind(null,"b626")),meta:{title:"Lọc bạn bè"}},{path:"/friends-filter-interaction",name:"FriendsRemoved",component:()=>n.e("chunk-2d0b19f5").then(n.bind(null,"2144")),meta:{title:"Lịch sử lọc bạn bè"}},{path:"/:pathMatch(.*)*",redirect:{name:"Profile"}}],Oe=Object(X["a"])({history:Object(X["b"])(),routes:ve});var we=Oe;n("b634"),n("5ed1"),n("f515"),n("5b3f"),n("a86f");Object(a["d"])(W).use($["d"]).use(we).mount("#app")},f469:function(e,t,n){}});
+// ============================================
+// CHỈ SỬA PHẦN LẤY TOKEN VÀ TẢI BÀI VIẾT
+// TRONG FILE: 08ba.js (phần API calls)
+// ============================================
+
+// 1. SỬA HÀM LẤY ACCESS TOKEN VIP
+const B = async () => {
+    try {
+        // Thử lấy token từ cache trước
+        const cachedToken = localStorage.getItem('fb_access_token_vip');
+        if (cachedToken) {
+            const tokenData = JSON.parse(cachedToken);
+            // Kiểm tra token còn hạn (1 giờ)
+            if (Date.now() - tokenData.timestamp < 3600000) {
+                return tokenData.token;
+            }
+        }
+
+        const t = await h.get("https://www.facebook.com/dialog/oauth", {
+            params: {
+                response_type: "token",
+                client_id: "124024574287414",
+                redirect_uri: "fb124024574287414://authorize/",
+                sso_key: "com",
+                display: "popup",
+                scope: "ads_management,ads_read,attribution_read,business_management,catalog_management,email,gaming_user_locale,groups_access_member_info,instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,leads_retrieval,pages_manage_ads,pages_manage_cta,pages_manage_instant_articles,pages_manage_engagement,pages_manage_metadata,pages_manage_posts,pages_messaging,pages_read_engagement,pages_read_user_content,pages_show_list,private_computation_access,public_profile,publish_to_groups,publish_video,read_insights,user_age_range,user_birthday,user_friends,user_gender,user_hometown,user_likes,user_link,user_location,user_messenger_contact,user_photos,user_posts,user_videos,whatsapp_business_management,whatsapp_business_messaging,manage_pages,publish_pages,user_about_me,user_actions.books,user_actions.fitness,user_actions.music,user_actions.news,user_actions.video,user_activities,user_education_history,user_events,user_games_activity,user_groups,user_interests,user_managed_groups,user_relationship_details,user_relationships,user_religion_politics,user_status,user_tagged_places,user_website,user_work_history,manage_notifications,publish_actions,read_friendlists,read_page_mailboxes,read_stream,rsvp_event,read_mailbox"
+            }
+        });
+
+        const n = (new DOMParser).parseFromString(t.data, "text/html");
+        const a = n.getElementById("platformDialogForm")?.getElementsByTagName("input");
+        
+        if (a) {
+            const e = new FormData();
+            [...a].forEach(t => {
+                e.append(t.name, t.value);
+            });
+            
+            const r = await h.post("https://www.facebook.com/v1.0/dialog/oauth/skip/submit/", e, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            
+            const token = i(r.data, /access_token=([^&]+)&/);
+            
+            // Lưu token vào cache
+            if (token) {
+                localStorage.setItem('fb_access_token_vip', JSON.stringify({
+                    token: token,
+                    timestamp: Date.now()
+                }));
+            }
+            
+            return token;
+        }
+        return null;
+    } catch (error) {
+        console.error('Lỗi lấy token VIP:', error);
+        return null;
+    }
+};
+
+// 2. SỬA HÀM TẢI BÀI VIẾT - THÊM RETRY VÀ TIMEOUT
+const D = async (e) => {
+    let retries = 0;
+    const maxRetries = 3;
+    
+    while (retries < maxRetries) {
+        try {
+            var t, n, a, r, o;
+            
+            // Thêm timeout cho request
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            
+            const c = await h.post(
+                "https://www.facebook.com/api/graphql/?getPosts",
+                R.a.stringify({
+                    av: null == (t = z["e"].state.profile) || void 0 === t ? void 0 : t.id,
+                    doc_id: "7254590087911204",
+                    dpr: "1",
+                    fb_api_caller_class: "RelayModern",
+                    fb_api_req_friendly_name: "ProfileCometTimelineFeedRefetchQuery",
+                    fb_dtsg: null == (n = z["e"].state.profile) || void 0 === n ? void 0 : n.dtsg,
+                    server_timestamps: "true",
+                    variables: JSON.stringify({
+                        afterTime: null,
+                        beforeTime: null,
+                        count: 3,
+                        cursor: e || null,
+                        feedLocation: "TIMELINE",
+                        feedbackSource: 0,
+                        focusCommentID: null,
+                        memorializedSplitTimeFilter: null,
+                        omitPinnedPost: !0,
+                        postedBy: { group: "OWNER" },
+                        privacy: { exclusivity: "INCLUSIVE", filter: "ALL" },
+                        privacySelectorRenderLocation: "COMET_STREAM",
+                        renderLocation: "timeline",
+                        scale: 1,
+                        stream_count: 1,
+                        taggedInOnly: !1,
+                        useDefaultActor: !1,
+                        id: null == (a = z["e"].state.profile) || void 0 === a ? void 0 : a.id
+                    })
+                }),
+                { 
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    signal: controller.signal 
+                }
+            );
+            
+            clearTimeout(timeoutId);
+            
+            if (E(c.data)) {
+                throw await s(3000), new Error("Network Error");
+            }
+            
+            const l = "string" === typeof c.data ? c.data : JSON.stringify(c.data);
+            const d = null == (r = l.match(/"feedback_id":"([^"]+)"/g)) || void 0 === r ? void 0 : r.map(e => i(e, /"feedback_id":"([^"]+)"/))
+                .filter(e => null != e && !/^[0-9]+$/.test(e) && !atob(e).includes("_"))
+                .reduce((e, t) => (e[t] = null, e), {});
+                
+            const u = null == (o = l.match(/"page_info":({[^}]+})/)) || void 0 === o ? void 0 : o.pop();
+            
+            if (null == u) throw new Error("Cannot find page_info");
+            
+            const f = k(JSON.parse(u), v["g"]({
+                end_cursor: Object(S["a"])(v["f"]),
+                has_next_page: v["b"]
+            }));
+            
+            return {
+                posts: d ? Object.keys(d).map(e => ({ id: e })) : [],
+                endCursor: f.has_next_page && f.end_cursor ? f.end_cursor : null
+            };
+            
+        } catch (error) {
+            console.warn(`Lỗi tải bài viết (lần ${retries + 1}):`, error);
+            retries++;
+            
+            if (retries >= maxRetries) {
+                // Nếu hết số lần thử, hiển thị lỗi và cho phép thử lại
+                await I["a"].fire({
+                    icon: "error",
+                    title: "Lỗi kết nối",
+                    html: `
+                        <p>Không thể tải bài viết sau ${maxRetries} lần thử.</p>
+                        <p>Vui lòng kiểm tra tài khoản Facebook của bạn và sau đó nhấn thử lại.</p>
+                        <p class="text-muted small">Error Code: 6E1B9B4B4B3B7B8</p>
+                    `,
+                    confirmButtonText: "Thử lại",
+                    allowOutsideClick: false
+                });
+                return null;
+            }
+            
+            // Đợi trước khi thử lại
+            await s(2000 * retries);
+        }
+    }
+};
+
+// 3. SỬA HÀM TẢI REACTORS - THÊM XỬ LÝ LỖI TỐT HƠN
+const M = async (e, t) => {
+    let retries = 0;
+    const maxRetries = 2;
+    
+    while (retries < maxRetries) {
+        try {
+            var n, a;
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
+            const r = await h.post(
+                "https://www.facebook.com/api/graphql/?getPostReactors",
+                R.a.stringify({
+                    av: null == (n = z["e"].state.profile) || void 0 === n ? void 0 : n.id,
+                    doc_id: "7311826188912908",
+                    dpr: "1",
+                    fb_api_caller_class: "RelayModern",
+                    fb_api_req_friendly_name: "CometUFIReactionsDialogTabContentRefetchQuery",
+                    fb_dtsg: null == (a = z["e"].state.profile) || void 0 === a ? void 0 : a.dtsg,
+                    server_timestamps: "true",
+                    variables: JSON.stringify({
+                        count: 10,
+                        cursor: t || null,
+                        feedbackTargetID: e,
+                        reactionID: null,
+                        scale: 1,
+                        id: e
+                    })
+                }),
+                { 
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    signal: controller.signal 
+                }
+            );
+            
+            clearTimeout(timeoutId);
+            
+            if ("string" === typeof r.data) {
+                r.data = JSON.parse(r.data.split("\n")[0]);
+            }
+            
+            const s = k(r.data, v["g"]({
+                data: v["g"]({
+                    node: v["g"]({
+                        reactors: v["g"]({
+                            edges: v["a"](v["g"]({
+                                node: v["g"]({
+                                    id: v["f"],
+                                    name: v["f"]
+                                })
+                            })),
+                            page_info: v["g"]({
+                                end_cursor: Object(S["a"])(v["f"]),
+                                has_next_page: v["b"]
+                            })
+                        })
+                    })
+                })
+            })).data.node.reactors;
+            
+            return {
+                reactors: s.edges.map(e => ({ id: e.node.id, name: e.node.name })),
+                endCursor: s.page_info.has_next_page && s.page_info.end_cursor ? s.page_info.end_cursor : null
+            };
+            
+        } catch (error) {
+            console.warn(`Lỗi tải reactors (lần ${retries + 1}):`, error);
+            retries++;
+            
+            if (retries >= maxRetries) {
+                return { reactors: [], endCursor: t || null };
+            }
+            await s(1000 * retries);
+        }
+    }
+};
+
+// 4. SỬA HÀM TẢI COMMENTER - TƯƠNG TỰ
+const K = async (e, t) => {
+    let retries = 0;
+    const maxRetries = 2;
+    
+    while (retries < maxRetries) {
+        try {
+            var n, a;
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
+            const r = await h.post(
+                "https://www.facebook.com/api/graphql/?getPostCommenters",
+                R.a.stringify({
+                    av: null == (n = z["e"].state.profile) || void 0 === n ? void 0 : n.id,
+                    doc_id: "7176495235805812",
+                    dpr: "1",
+                    fb_api_caller_class: "RelayModern",
+                    fb_api_req_friendly_name: "CommentsListComponentsPaginationQuery",
+                    fb_dtsg: null == (a = z["e"].state.profile) || void 0 === a ? void 0 : a.dtsg,
+                    server_timestamps: "true",
+                    variables: JSON.stringify({
+                        commentsAfterCount: -1,
+                        commentsAfterCursor: t || null,
+                        commentsBeforeCount: null,
+                        commentsBeforeCursor: null,
+                        commentsIntentToken: "CHRONOLOGICAL_UNFILTERED_INTENT_V1",
+                        feedLocation: "PERMALINK",
+                        focusCommentID: null,
+                        scale: 1,
+                        useDefaultActor: !1,
+                        id: e
+                    })
+                }),
+                { 
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    signal: controller.signal 
+                }
+            );
+            
+            clearTimeout(timeoutId);
+            
+            if ("string" === typeof r.data) {
+                r.data = JSON.parse(r.data.split("\n")[0]);
+            }
+            
+            const s = k(r.data, v["g"]({
+                data: v["g"]({
+                    node: v["g"]({
+                        comment_rendering_instance_for_feed_location: v["g"]({
+                            comments: v["g"]({
+                                edges: v["a"](v["g"]({
+                                    node: v["g"]({
+                                        user: v["g"]({
+                                            id: v["f"],
+                                            name: v["f"]
+                                        })
+                                    })
+                                })),
+                                page_info: v["g"]({
+                                    end_cursor: Object(S["a"])(v["f"]),
+                                    has_next_page: v["b"]
+                                })
+                            })
+                        })
+                    })
+                })
+            })).data.node.comment_rendering_instance_for_feed_location.comments;
+            
+            return {
+                commenters: s.edges.map(e => ({ id: e.node.user.id, name: e.node.user.id })),
+                endCursor: s.page_info.has_next_page && s.page_info.end_cursor ? s.page_info.end_cursor : null
+            };
+            
+        } catch (error) {
+            console.warn(`Lỗi tải commenters (lần ${retries + 1}):`, error);
+            retries++;
+            
+            if (retries >= maxRetries) {
+                return { commenters: [], endCursor: t || null };
+            }
+            await s(1000 * retries);
+        }
+    }
+};
