@@ -1,1 +1,970 @@
+// ============================================
+// FILE: FriendFilter.vue (CODE ĐẦY ĐỦ)
+// ============================================
 
+<template>
+  <div class="container-fluid">
+    <!-- Đang tải danh sách bạn bè -->
+    <div v-if="loadingFriends < 100" class="row">
+      <div class="spinner-border text-success" role="status">
+        <span class="sr-only">...</span>
+      </div>
+      <div class="align-self-center lead ml-2">
+        Đang tải danh sách bạn bè của bạn ({{ loadingFriends }}%)
+      </div>
+    </div>
+
+    <!-- Giao diện chính -->
+    <div v-else class="row">
+      <!-- Cột trái: Bộ lọc -->
+      <div class="col-md-5">
+        <div class="card card-info">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-search"></i>
+              Tìm kiếm bạn bè cần lọc (bạn có {{ friends.length }} bạn bè)
+            </h3>
+          </div>
+          
+          <div class="card-body">
+            <!-- 1. Mức độ tương tác -->
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="interaction"
+                  v-model="filterOption.interaction"
+                  :disabled="filterOption.interactionDisabled"
+                >
+                <label for="interaction" class="custom-control-label">
+                  Mức độ tương tác với bạn
+                  <a v-if="loadingInteraction === null" 
+                     href="#" 
+                     class="small" 
+                     @click.prevent="loadInteractionFriends">
+                    (Tải dữ liệu)
+                  </a>
+                  <template v-else-if="loadingInteraction < 100">
+                    ({{ loadingInteraction }}%)
+                  </template>
+                  <span v-else class="text-success">✓ Đã tải</span>
+                </label>
+              </div>
+
+              <!-- Các tùy chọn tương tác -->
+              <div v-if="filterOption.interaction" class="pl-3">
+                <div class="small text-secondary">
+                  Thống kê dựa vào 100 bài viết gần đây trên Trang cá nhân của bạn.
+                </div>
+
+                <!-- Không tương tác -->
+                <div class="custom-control custom-radio">
+                  <input 
+                    class="custom-control-input" 
+                    type="radio" 
+                    id="notInteraction" 
+                    value="NOT_INTERACTION"
+                    v-model="filterOption.interactionValue"
+                  >
+                  <label for="notInteraction" class="custom-control-label">
+                    Không tương tác
+                  </label>
+                </div>
+
+                <!-- Tổng lượt thích -->
+                <div class="custom-control custom-radio">
+                  <input 
+                    class="custom-control-input" 
+                    type="radio" 
+                    id="reaction" 
+                    value="REACTION"
+                    v-model="filterOption.interactionValue"
+                  >
+                  <label for="reaction" class="custom-control-label">
+                    Tổng lượt thích
+                  </label>
+                </div>
+                <div v-if="filterOption.interactionValue === 'REACTION'" class="pl-2 mt-1">
+                  <label class="mr-1">Nhỏ hơn</label>
+                  <input 
+                    type="number" 
+                    class="form-control d-inline-block w-auto"
+                    v-model.number="filterOption.reactionValue"
+                  >
+                </div>
+
+                <!-- Tổng lượt bình luận -->
+                <div class="custom-control custom-radio">
+                  <input 
+                    class="custom-control-input" 
+                    type="radio" 
+                    id="comment" 
+                    value="COMMENT"
+                    v-model="filterOption.interactionValue"
+                  >
+                  <label for="comment" class="custom-control-label">
+                    Tổng lượt bình luận
+                  </label>
+                </div>
+                <div v-if="filterOption.interactionValue === 'COMMENT'" class="pl-2 mt-1">
+                  <label class="mr-1">Nhỏ hơn</label>
+                  <input 
+                    type="number" 
+                    class="form-control d-inline-block w-auto"
+                    v-model.number="filterOption.commentValue"
+                  >
+                </div>
+
+                <!-- Tổng số tin nhắn -->
+                <div class="custom-control custom-radio">
+                  <input 
+                    class="custom-control-input" 
+                    type="radio" 
+                    id="message" 
+                    value="MESSAGE"
+                    v-model="filterOption.interactionValue"
+                  >
+                  <label for="message" class="custom-control-label">
+                    Tổng số tin nhắn
+                  </label>
+                </div>
+                <div v-if="filterOption.interactionValue === 'MESSAGE'" class="pl-2 mt-1">
+                  <label class="mr-1">Nhỏ hơn</label>
+                  <input 
+                    type="number" 
+                    class="form-control d-inline-block w-auto"
+                    v-model.number="filterOption.messageValue"
+                  >
+                </div>
+
+                <!-- Tổng số lượng tương tác -->
+                <div class="custom-control custom-radio">
+                  <input 
+                    class="custom-control-input" 
+                    type="radio" 
+                    id="interactionNumber" 
+                    value="INTERACTION_NUMBER"
+                    v-model="filterOption.interactionValue"
+                  >
+                  <label for="interactionNumber" class="custom-control-label">
+                    Tổng số lượng tương tác
+                  </label>
+                </div>
+                <div v-if="filterOption.interactionValue === 'INTERACTION_NUMBER'" class="pl-2 mt-1">
+                  <label class="mr-1">Nhỏ hơn</label>
+                  <input 
+                    type="number" 
+                    class="form-control d-inline-block w-auto"
+                    v-model.number="filterOption.interactionNumberValue"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Tài khoản bị khóa -->
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="accountLocked"
+                  v-model="filterOption.accountLocked"
+                >
+                <label for="accountLocked" class="custom-control-label">
+                  Tài khoản bị khóa hoặc vô hiệu hóa
+                </label>
+              </div>
+            </div>
+
+            <!-- 3. Tên chứa ký tự đặc biệt -->
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="strangeName"
+                  v-model="filterOption.strangeName"
+                >
+                <label for="strangeName" class="custom-control-label">
+                  Tên chứa ký tự đặc biệt
+                </label>
+              </div>
+            </div>
+
+            <!-- 4. Không có ảnh đại diện -->
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="noAvatar"
+                  v-model="filterOption.noAvatar"
+                  :disabled="filterOption.noAvatarDisabled"
+                >
+                <label for="noAvatar" class="custom-control-label">
+                  Không có ảnh đại diện
+                </label>
+              </div>
+            </div>
+
+            <!-- 5. Giới tính -->
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="gender"
+                  v-model="filterOption.gender"
+                  :disabled="filterOption.genderDisabled"
+                >
+                <label for="gender" class="custom-control-label">
+                  Giới tính
+                </label>
+              </div>
+              <div v-if="filterOption.gender" class="pl-3">
+                <div class="custom-control custom-checkbox">
+                  <input 
+                    class="custom-control-input" 
+                    type="checkbox" 
+                    id="genderMale" 
+                    value="MALE"
+                    v-model="filterOption.genderValue"
+                  >
+                  <label for="genderMale" class="custom-control-label">Nam</label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                  <input 
+                    class="custom-control-input" 
+                    type="checkbox" 
+                    id="genderFemale" 
+                    value="FEMALE"
+                    v-model="filterOption.genderValue"
+                  >
+                  <label for="genderFemale" class="custom-control-label">Nữ</label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                  <input 
+                    class="custom-control-input" 
+                    type="checkbox" 
+                    id="genderNeuter" 
+                    value="NEUTER"
+                    v-model="filterOption.genderValue"
+                  >
+                  <label for="genderNeuter" class="custom-control-label">Không có giới tính</label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                  <input 
+                    class="custom-control-input" 
+                    type="checkbox" 
+                    id="genderUnknown" 
+                    value="UNKNOWN"
+                    v-model="filterOption.genderValue"
+                  >
+                  <label for="genderUnknown" class="custom-control-label">Không xác định</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 6. Số lượng bạn chung -->
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="mutualFriends"
+                  v-model="filterOption.mutualFriends"
+                  :disabled="filterOption.mutualFriendsDisabled"
+                >
+                <label for="mutualFriends" class="custom-control-label">
+                  Số lượng bạn chung
+                </label>
+              </div>
+              <div v-if="filterOption.mutualFriends" class="pl-3 mt-1">
+                <label class="mr-1">Nhỏ hơn</label>
+                <input 
+                  type="number" 
+                  class="form-control d-inline-block w-auto"
+                  v-model.number="filterOption.mutualFriendsValue"
+                >
+              </div>
+            </div>
+
+            <!-- 7. Quốc gia không phải Việt Nam -->
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="noVietnamese"
+                  v-model="filterOption.noVietnamese"
+                  :disabled="filterOption.noVietnameseDisabled"
+                >
+                <label for="noVietnamese" class="custom-control-label">
+                  Quốc gia không phải Việt Nam
+                  <a v-if="loadingLocation === null" 
+                     href="#" 
+                     class="small" 
+                     @click.prevent="loadLocation">
+                    (Tải dữ liệu)
+                  </a>
+                  <template v-else-if="loadingLocation < 100">
+                    ({{ loadingLocation }}%)
+                  </template>
+                  <span v-else class="text-success">✓ Đã tải</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Các tùy chọn khác -->
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="amountFriends" 
+                  disabled
+                >
+                <label for="amountFriends" class="custom-control-label">
+                  Số lượng bạn bè (tạm thời không thể sử dụng)
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="livingArea" 
+                  disabled
+                >
+                <label for="livingArea" class="custom-control-label">
+                  Khu vực hiện đang sinh sống (sắp ra mắt)
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input 
+                  class="custom-control-input" 
+                  type="checkbox" 
+                  id="notPostLongTime" 
+                  disabled
+                >
+                <label for="notPostLongTime" class="custom-control-label">
+                  Không đăng bài trong một khoảng thời gian (sắp ra mắt)
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="card-footer d-flex">
+            <div class="align-self-center mr-2">
+              <button 
+                type="button" 
+                class="btn btn-primary" 
+                @click="submitFilterFriends"
+                :disabled="loadingInteraction === null || loadingInteraction < 100"
+              >
+                Xem kết quả
+                <i class="fas fa-arrow-right"></i>
+              </button>
+              <span v-if="loadingInteraction === null" class="text-warning ml-2 small">
+                <i class="fas fa-exclamation-triangle"></i> Cần tải dữ liệu tương tác trước
+              </span>
+            </div>
+            <div class="align-self-center ml-auto">
+              <button 
+                type="button" 
+                class="btn btn-warning" 
+                @click="reloadFriends"
+              >
+                Tải lại danh sách bạn bè
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cột phải: Kết quả -->
+      <div class="col-md-7">
+        <div class="card card-info card-outline">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-list"></i>
+              Kết quả tìm kiếm ({{ filterFriends.length }} bạn bè)
+            </h3>
+          </div>
+          
+          <div v-if="filterFriends.length > 0" class="card-body">
+            <button 
+              type="button" 
+              class="btn btn-danger" 
+              @click="removeFriends"
+            >
+              Hủy kết bạn
+            </button>
+          </div>
+
+          <div class="card-body table-responsive p-0 h-80">
+            <table class="table table-head-fixed">
+              <thead>
+                <tr>
+                  <th class="align-middle" width="10%">
+                    <div class="custom-control custom-checkbox">
+                      <input 
+                        type="checkbox" 
+                        class="custom-control-input" 
+                        id="selectAllFriends"
+                        @change="selectAllFriends"
+                      >
+                      <label for="selectAllFriends" class="custom-control-label"></label>
+                    </div>
+                  </th>
+                  <th class="align-middle" width="25%">ID bạn bè</th>
+                  <th class="align-middle" width="35%">Tên bạn bè</th>
+                  <th class="align-middle" width="30%">Tương tác với bạn</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="friend in filterFriends" :key="friend.id">
+                  <td class="align-middle">
+                    <div class="custom-control custom-checkbox">
+                      <input 
+                        type="checkbox" 
+                        class="custom-control-input" 
+                        :id="'select' + friend.id"
+                        v-model="friend.selected"
+                      >
+                      <label :for="'select' + friend.id" class="custom-control-label"></label>
+                    </div>
+                  </td>
+                  <td class="align-middle">
+                    <label v-if="friend.active" :for="'select' + friend.id" class="font-weight-normal mb-0">
+                      {{ friend.id }}
+                    </label>
+                  </td>
+                  <td class="align-middle">
+                    <div class="d-flex">
+                      <div class="align-self-center mr-1">
+                        <img :src="friend.image" class="wh-3">
+                      </div>
+                      <div class="align-self-center text-break">
+                        <a v-if="friend.active" target="_blank" :href="'https://www.facebook.com/profile.php?id=' + friend.id">
+                          {{ friend.name }}
+                        </a>
+                        <template v-else>
+                          {{ friend.name }}
+                        </template>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="align-middle">
+                    <template v-if="friend.active">
+                      <template v-if="friend.interaction">
+                        Lượt thích / bình luận: {{ friend.interaction.reactions }} / {{ friend.interaction.comments }}
+                        <br>
+                        Số tin nhắn: {{ friend.interaction.messages }}
+                      </template>
+                      <template v-else>
+                        <span class="text-warning">⏳ Đang tải...</span>
+                      </template>
+                    </template>
+                    <template v-else>
+                      <span class="text-muted">Tài khoản không hoạt động</span>
+                    </template>
+                  </td>
+                </tr>
+                <tr v-if="filterFriends.length === 0">
+                  <td colspan="4">
+                    <span v-if="isNotSubmit" class="text-primary">
+                      Chọn một hoặc nhiều <b>tùy chọn</b> ở bên trái và nhấn nút <b>Xem kết quả</b> để xem kết quả tìm kiếm ở đây.
+                    </span>
+                    <span v-else class="text-dark">
+                      Không tìm thấy bạn bè nào phù hợp với điều kiện của bạn. Vui lòng chọn ít lại.
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+// ============================================
+// PHẦN SCRIPT - CODE ĐẦY ĐỦ
+// ============================================
+
+import { mapState } from 'vuex';
+
+const VIETNAMESE_REGEX = /^[\saAàÀảẢãÃáÁạẠăĂằẰẳẲẵẴắẮặẶâÂầẦẩẨẫẪấẤậẬbBcCdDđĐeEèÈẻẺẽẼéÉẹẸêÊềỀểỂễỄếẾệỆfFgGhHiIìÌỉỈĩĨíÍịỊjJkKlLmMnNoOòÒỏỎõÕóÓọỌôÔồỒổỔỗỖốỐộỘơƠờỜởỞỡỠớỚợỢpPqQrRsStTuUùÙủỦũŨúÚụỤưƯừỪửỬữỮứỨựỰvVwWxXyYỳỲỷỶỹỸýÝỵỴzZ]*$/u;
+
+export default {
+  data() {
+    return {
+      friends: [],
+      filterFriends: [],
+      filterOption: {
+        interaction: false,
+        interactionDisabled: false,
+        interactionValue: 'NOT_INTERACTION',
+        reactionValue: 5,
+        commentValue: 5,
+        messageValue: 5,
+        interactionNumberValue: 5,
+        gender: false,
+        genderDisabled: false,
+        genderValue: ['MALE', 'NEUTER', 'UNKNOWN'],
+        accountLocked: false,
+        strangeName: false,
+        mutualFriends: false,
+        mutualFriendsDisabled: false,
+        mutualFriendsValue: 4,
+        amountFriends: false,
+        amountFriendsDisabled: false,
+        amountFriendsValue: 500,
+        noAvatar: false,
+        noAvatarDisabled: false,
+        noVietnamese: false,
+        noVietnameseDisabled: false
+      },
+      loadingFriends: null,
+      loadingInteraction: null,
+      loadingLocation: null,
+      isNotSubmit: true
+    };
+  },
+
+  created() {
+    if (this.$store.state.friends && this.$store.state.friends.length > 0) {
+      this.friends = this.$store.state.friends;
+      this.loadingFriends = 100;
+      this.loadingInteraction = this.friends.some(f => f.active && f.interaction == null) ? null : 100;
+      this.loadingLocation = this.friends.some(f => f.active && f.locale == null) ? null : 100;
+    } else {
+      this.getFriends();
+    }
+  },
+
+  methods: {
+    // ============================================
+    // 1. LẤY DANH SÁCH BẠN BÈ
+    // ============================================
+    async getFriends() {
+      this.loadingFriends = 0;
+      let endCursor = undefined;
+      let friends = [];
+
+      do {
+        const result = await getFriendsAPI(endCursor);
+        if (!result) {
+          window.location.reload();
+          return;
+        }
+        friends = friends.concat(result.friends.map(f => ({ ...f })));
+        endCursor = result.endCursor;
+        this.loadingFriends = Math.round(100 * friends.length / 5000);
+        this.loadingFriends = this.loadingFriends > 99 ? 99 : this.loadingFriends;
+      } while (endCursor != null);
+
+      this.friends = friends.map(f => ({
+        id: f.id,
+        active: f.url != null && f.hasSubTitle,
+        name: f.name,
+        image: f.image,
+        hasAvatar: !f.image.includes('143086968_2856368904622192_1959732218791162458_n'),
+        gender: f.gender,
+        mutualFriendsCount: f.mutualFriendsCount,
+        interaction: undefined,
+        friendsCount: undefined,
+        locale: undefined,
+        location: undefined,
+        hometown: undefined
+      }));
+
+      this.saveFriends(this.friends);
+      this.loadingFriends = 100;
+    },
+
+    // ============================================
+    // 2. LẤY ACCESS TOKEN VIP - CÓ XỬ LÝ TOKEN HẾT HẠN
+    // ============================================
+    async loadAccessTokenVIP() {
+      try {
+        // Kiểm tra token có sẵn
+        if (this.$store.state.profile?.accessTokenVIP) {
+          const isValid = await this.checkTokenValid(this.$store.state.profile.accessTokenVIP);
+          if (isValid) {
+            return this.$store.state.profile.accessTokenVIP;
+          }
+        }
+
+        // Hiển thị loading
+        Swal.fire({
+          icon: 'info',
+          title: 'Đang lấy Access Token mới',
+          text: 'Vui lòng đợi trong giây lát...',
+          allowOutsideClick: false,
+          showConfirmButton: false
+        });
+
+        const result = await getAccessTokenVIP();
+        Swal.close();
+
+        if (result && this.$store.state.profile) {
+          this.$store.state.profile.accessTokenVIP = result;
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Lấy token thành công',
+            text: 'Đã cập nhật Access Token mới.',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          
+          return result;
+        }
+
+        // Hướng dẫn user nếu không lấy được token
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi Access Token',
+          html: `
+            <p>Không thể lấy Access Token tự động.</p>
+            <p>Vui lòng thực hiện các bước sau:</p>
+            <ol class="text-left">
+              <li>Đăng nhập lại vào Facebook</li>
+              <li>Mở tab mới và truy cập <a href="https://www.facebook.com" target="_blank">facebook.com</a></li>
+              <li>Quay lại và nhấn "Thử lại"</li>
+            </ol>
+          `,
+          confirmButtonText: 'Thử lại',
+          allowOutsideClick: false
+        }).then(result => {
+          if (result.isConfirmed) {
+            this.loadAccessTokenVIP();
+          }
+        });
+        
+        return null;
+
+      } catch (error) {
+        console.error('Lỗi loadAccessTokenVIP:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi kết nối',
+          text: 'Không thể kết nối tới Facebook để lấy token mới.',
+          confirmButtonText: 'Thử lại'
+        });
+        return null;
+      }
+    },
+
+    // ============================================
+    // 3. KIỂM TRA TOKEN CÓ HỢP LỆ KHÔNG
+    // ============================================
+    async checkTokenValid(token) {
+      try {
+        const response = await fetch('https://graph.facebook.com/me?access_token=' + token);
+        const data = await response.json();
+        return !data.error;
+      } catch (error) {
+        console.error('Lỗi kiểm tra token:', error);
+        return false;
+      }
+    },
+
+    // ============================================
+    // 4. TẢI DỮ LIỆU TƯƠNG TÁC - CÓ XỬ LÝ LỖI
+    // ============================================
+    async loadInteractionFriends() {
+      this.loadingInteraction = 0;
+      
+      // Kiểm tra token trước
+      const token = await this.loadAccessTokenVIP();
+      if (!token) {
+        this.loadingInteraction = null;
+        return;
+      }
+
+      let endCursor = undefined;
+      let posts = [];
+      
+      // Tải 100 bài viết
+      try {
+        do {
+          const result = await getPosts(endCursor);
+          if (!result) {
+            this.loadingInteraction = null;
+            Swal.fire({
+              icon: 'warning',
+              title: 'Không tìm thấy bài viết',
+              text: 'Không thể lấy bài viết từ Facebook. Vui lòng thử lại sau.'
+            });
+            return;
+          }
+          posts = posts.concat(result.posts);
+          endCursor = result.endCursor;
+          this.loadingInteraction = Math.round(40 * posts.length / 100);
+          this.loadingInteraction = this.loadingInteraction > 40 ? 40 : this.loadingInteraction;
+        } while (endCursor != null && posts.length < 100);
+      } catch (error) {
+        console.error('Lỗi tải bài viết:', error);
+        this.loadingInteraction = null;
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi tải bài viết',
+          text: 'Không thể tải bài viết. Vui lòng thử lại.'
+        });
+        return;
+      }
+
+      if (posts.length === 0) {
+        this.loadingInteraction = null;
+        Swal.fire({
+          icon: 'warning',
+          title: 'Không có bài viết',
+          text: 'Không tìm thấy bài viết nào để thống kê tương tác.'
+        });
+        return;
+      }
+
+      // Lấy reactors
+      endCursor = undefined;
+      let reactors = [];
+      try {
+        for (let i = 0; i < posts.length; i++) {
+          const post = posts[i];
+          do {
+            const result = await getReactors(post.id, endCursor);
+            if (!result) break;
+            reactors = reactors.concat(result.reactors);
+            endCursor = result.endCursor;
+            await this.delay(500);
+          } while (endCursor != null);
+          this.loadingInteraction = 40 + Math.round(30 * (i + 1) / posts.length);
+          this.loadingInteraction = this.loadingInteraction > 70 ? 70 : this.loadingInteraction;
+        }
+      } catch (error) {
+        console.error('Lỗi tải reactors:', error);
+        // Không throw error, tiếp tục với dữ liệu có được
+      }
+
+      // Lấy commenters
+      endCursor = undefined;
+      let commenters = [];
+      try {
+        for (let i = 0; i < posts.length; i++) {
+          const post = posts[i];
+          do {
+            const result = await getCommenters(post.id, endCursor);
+            if (!result) break;
+            commenters = commenters.concat(result.commenters);
+            endCursor = result.endCursor;
+            await this.delay(500);
+          } while (endCursor != null);
+          this.loadingInteraction = 70 + Math.round(30 * (i + 1) / posts.length);
+          this.loadingInteraction = this.loadingInteraction > 99 ? 99 : this.loadingInteraction;
+        }
+      } catch (error) {
+        console.error('Lỗi tải commenters:', error);
+        // Không throw error, tiếp tục với dữ liệu có được
+      }
+
+      // Lấy messages
+      let messages = [];
+      try {
+        const result = await getMessages();
+        if (result) {
+          messages = result;
+        }
+      } catch (error) {
+        console.error('Lỗi tải messages:', error);
+        // Không throw error, tiếp tục với messages rỗng
+      }
+
+      // Tạo map và gán dữ liệu
+      const interactionMap = {};
+      reactors.forEach(reactor => {
+        if (!interactionMap[reactor.id]) {
+          interactionMap[reactor.id] = { reactions: 0, comments: 0, messages: 0 };
+        }
+        interactionMap[reactor.id].reactions++;
+      });
+      commenters.forEach(commenter => {
+        if (!interactionMap[commenter.id]) {
+          interactionMap[commenter.id] = { reactions: 0, comments: 0, messages: 0 };
+        }
+        interactionMap[commenter.id].comments++;
+      });
+      messages.forEach(msg => {
+        if (!interactionMap[msg.id]) {
+          interactionMap[msg.id] = { reactions: 0, comments: 0, messages: 0 };
+        }
+        interactionMap[msg.id].messages = msg.count || 0;
+      });
+
+      // Gán dữ liệu vào friends
+      this.friends.forEach(friend => {
+        if (interactionMap[friend.id]) {
+          friend.interaction = interactionMap[friend.id];
+        } else {
+          friend.interaction = { reactions: 0, comments: 0, messages: 0 };
+        }
+      });
+
+      this.saveFriends(this.friends);
+      this.loadingInteraction = 100;
+
+      // Thông báo thành công
+      const totalWithInteraction = Object.keys(interactionMap).length;
+      Swal.fire({
+        icon: 'success',
+        title: 'Tải dữ liệu thành công',
+        text: `Đã tải tương tác của ${totalWithInteraction} bạn bè từ ${posts.length} bài viết.`,
+        timer: 3000,
+        showConfirmButton: false
+      });
+    },
+
+    // ============================================
+    // 5. TẢI VỊ TRÍ
+    // ============================================
+    async loadLocation() {
+      this.loadingLocation = 0;
+      const token = await this.loadAccessTokenVIP();
+      if (!token) return;
+
+      this.loadingLocation = 10;
+      
+      // Lấy location
+      let endCursor = undefined;
+      let locations = [];
+      do {
+        const result = await getLocations(token, endCursor);
+        if (!result) {
+          this.loadingLocation = null;
+          return;
+        }
+        locations = locations.concat(result.friends);
+        endCursor = result.next;
+        this.loadingLocation = 10 + Math.round(30 * locations.length / this.friends.length);
+      } while (endCursor != null);
+
+      // Lấy hometown
+      endCursor = undefined;
+      let hometowns = [];
+      do {
+        const result = await getHometowns(token, endCursor);
+        if (!result) {
+          this.loadingLocation = null;
+          return;
+        }
+        hometowns = hometowns.concat(result.friends);
+        endCursor = result.next;
+        this.loadingLocation = 40 + Math.round(30 * hometowns.length / this.friends.length);
+      } while (endCursor != null);
+
+      // Lấy locale
+      endCursor = undefined;
+      let locales = [];
+      do {
+        const result = await getLocales(token, endCursor);
+        if (!result) {
+          this.loadingLocation = null;
+          return;
+        }
+        locales = locales.concat(result.friends);
+        endCursor = result.next;
+        this.loadingLocation = 70 + Math.round(30 * locales.length / this.friends.length);
+      } while (endCursor != null);
+
+      // Gán dữ liệu
+      this.friends = this.friends.map(friend => {
+        const location = locations.find(l => l.id === friend.id);
+        const hometown = hometowns.find(h => h.id === friend.id);
+        const locale = locales.find(l => l.id === friend.id);
+        return {
+          ...friend,
+          location: location?.location,
+          hometown: hometown?.hometown,
+          locale: locale?.locale
+        };
+      });
+
+      this.saveFriends(this.friends);
+      this.loadingLocation = 100;
+    },
+
+    // ============================================
+    // 6. LỌC BẠN BÈ - PHẦN LỌC TƯƠNG TÁC ĐÃ SỬA
+    // ============================================
+    submitFilterFriends() {
+      // Kiểm tra đã tải dữ liệu
+      if (this.filterOption.interaction && (this.loadingInteraction === null || this.loadingInteraction < 100)) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Chưa có dữ liệu tương tác',
+          text: 'Vui lòng tải dữ liệu tương tác trước khi lọc.'
+        });
+        return;
+      }
+
+      this.filterFriends = this.friends.filter(friend => {
+        // ====== XỬ LÝ LỌC TƯƠNG TÁC (ĐÃ SỬA) ======
+        if (this.filterOption.interaction) {
+          if (!friend.active) return false;
+          
+          // Xử lý trường hợp interaction null/undefined
+          const totalInteraction = (friend.interaction?.reactions || 0) + 
+                                  (friend.interaction?.comments || 0) + 
+                                  (friend.interaction?.messages || 0);
+          
+          if (this.filterOption.interactionValue === 'NOT_INTERACTION') {
+            // Lọc: tổng tương tác = 0
+            if (totalInteraction !== 0) return false;
+          } else if (this.filterOption.interactionValue === 'REACTION') {
+            // Lọc: lượt thích < giá trị nhập
+            if ((friend.interaction?.reactions || 0) >= this.filterOption.reactionValue) {
+              return false;
+            }
+          } else if (this.filterOption.interactionValue === 'COMMENT') {
+            // Lọc: bình luận < giá trị nhập
+            if ((friend.interaction?.comments || 0) >= this.filterOption.commentValue) {
+              return false;
+            }
+          } else if (this.filterOption.interactionValue === 'MESSAGE') {
+            // Lọc: tin nhắn < giá trị nhập
+            if ((friend.interaction?.messages || 0) >= this.filterOption.messageValue) {
+              return false;
+            }
+          } else if (this.filterOption.interactionValue === 'INTERACTION_NUMBER') {
+            // Lọc: tổng tương tác < giá trị nhập
+            if (totalInteraction >= this.filterOption.interactionNumberValue) {
+              return false;
+            }
+          }
+        }
+        // ====== KẾT THÚC PHẦN SỬA ======
+
+        // Giữ nguyên các bộ lọc khác
+        if (this.filterOption.gender) {
+          if (!friend.gender || !this.filterOption.genderValue.includes(friend.gender)) {
+            return false;
+          }
+        }
+        if (this.filterOption.accountLocked) {
+          if (friend.active !== false) return false;
+        }
+        if (this.filterOption.strangeName) {
+          if (VIETNAMESE_REGEX.test(friend.name.normalize('NFC'))) return false;
+        }
+        if (this.filterOption.noAvatar) {
+          if (friend.hasAvatar !== false) return false;
+        }
+        if (this
