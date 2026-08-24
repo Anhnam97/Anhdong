@@ -1,0 +1,47 @@
+name: Build TweakLoader
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Setup Theos
+        uses: Randomblock1/theos-action@v1
+        with:
+          theos-dir: theos
+          theos-src: https://github.com/theos/theos
+          theos-sdks: https://github.com/theos/sdks
+          theos-sdks-branch: master
+
+      - name: Build TweakLoader
+        run: |
+          make clean
+          make FINALPACKAGE=1 ARCHS=arm64 SDKVERSION=16.5
+
+      - name: Find built dylib
+        run: |
+          echo "Built dylibs:"
+          find . -type f -name "*.dylib" -print
+          test -f ".theos/obj/TweakLoader.dylib" || test -n "$(find . -type f -name 'TweakLoader.dylib' -print -quit)"
+
+      - name: Collect TweakLoader.dylib
+        run: |
+          mkdir -p artifacts
+          cp "$(find . -type f -name 'TweakLoader.dylib' -print -quit)" artifacts/TweakLoader.dylib
+          file artifacts/TweakLoader.dylib
+
+      - name: Upload TweakLoader.dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: TweakLoader-dylib
+          path: artifacts/TweakLoader.dylib
+          if-no-files-found: error
