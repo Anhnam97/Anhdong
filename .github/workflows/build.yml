@@ -14,30 +14,43 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
 
-      - name: Setup Theos
-        uses: Randomblock1/theos-action@v1
-        with:
-          theos-dir: theos
-          theos-src: https://github.com/theos/theos
-          theos-sdks: https://github.com/theos/sdks
-          theos-sdks-branch: master
+      - name: Install Theos (official Linux installer)
+        env:
+          THEOS: ${{ github.workspace }}/theos
+          CI: "1"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bash curl sudo coreutils xz-utils git make perl
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          echo "THEOS=$THEOS" >> "$GITHUB_ENV"
+          echo "$THEOS/bin" >> "$GITHUB_PATH"
+
+          echo "Installed SDKs:"
+          find "$THEOS/sdks" -maxdepth 1 -type d -name '*.sdk' -print
+
+          echo "Installed toolchain:"
+          "$THEOS/toolchain/linux/iphone/bin/clang" --version
 
       - name: Build TweakLoader
+        working-directory: TweakLoader_Source
+        env:
+          THEOS: ${{ github.workspace }}/theos
         run: |
-          make clean
-          make FINALPACKAGE=1 ARCHS=arm64 SDKVERSION=16.5
+          make clean || true
+          make FINALPACKAGE=1 ARCHS=arm64
 
       - name: Find built dylib
         run: |
           echo "Built dylibs:"
-          find . -type f -name "*.dylib" -print
-          test -f ".theos/obj/TweakLoader.dylib" || test -n "$(find . -type f -name 'TweakLoader.dylib' -print -quit)"
+          find TweakLoader_Source -type f -name '*.dylib' -print
+          test -n "$(find TweakLoader_Source -type f -name 'TweakLoader.dylib' -print -quit)"
 
       - name: Collect TweakLoader.dylib
         run: |
           mkdir -p artifacts
-          cp "$(find . -type f -name 'TweakLoader.dylib' -print -quit)" artifacts/TweakLoader.dylib
+          cp "$(find TweakLoader_Source -type f -name 'TweakLoader.dylib' -print -quit)" artifacts/TweakLoader.dylib
           file artifacts/TweakLoader.dylib
+          ls -lh artifacts/TweakLoader.dylib
 
       - name: Upload TweakLoader.dylib
         uses: actions/upload-artifact@v4
