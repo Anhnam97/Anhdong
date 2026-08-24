@@ -23,12 +23,7 @@ static void StopKeepScreenOn(void) { dispatch_async(dispatch_get_main_queue(), ^
     [UIApplication sharedApplication].idleTimerDisabled = NO;
 });
 }
-attribute((constructor)) static void TweakLoaderInit(void) {
-dispatch_async(dispatch_get_main_queue(), ^{
-
-    NSNotificationCenter *center =
-        [NSNotificationCenter defaultCenter];
-
+__attribute__((constructor)) static void TweakLoaderInit(void) { dispatch_async(dispatch_get_main_queue(), ^{ NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
     [center addObserverForName:UIApplicationDidBecomeActiveNotification
                         object:nil
                          queue:[NSOperationQueue mainQueue]
