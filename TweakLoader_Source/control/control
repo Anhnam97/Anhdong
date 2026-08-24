@@ -1,9 +1,9 @@
-Package: com.tweakloader.screenawake
+Package: com.anhdong.tweakloader
 Name: TweakLoader
-Version: 1.0
+Version: 1.0.0
 Architecture: iphoneos-arm
-Description: Keep screen awake inside applications.
-Maintainer: User
-Author: ChatGPT
+Description: Keep the screen awake while the application is active.
+Maintainer: Anhdong
+Author: Anhdong
 Section: Tweaks
 Depends: mobilesubstrate
